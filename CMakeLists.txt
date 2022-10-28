@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 add_executable(ugv_firm
-	main.c
+	main.cpp
 	)
 
 # Pull in our pico_stdlib which pulls in commonl
