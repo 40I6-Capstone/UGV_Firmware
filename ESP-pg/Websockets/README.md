@@ -1,4 +1,4 @@
-#ESP-network-test
+# ESP-network-test
 Test program to have a python websocket server communicate with the ESP
 
 ## Instructions:
