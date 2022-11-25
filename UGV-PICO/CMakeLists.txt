@@ -15,7 +15,7 @@ add_executable(ugv_firm
 	)
 
 # Pull in our pico_stdlib which pulls in commonl
-target_link_libraries(ugv_firm pico_stdlib pico_multicore hardware_uart pico_stdio_usb)
+target_link_libraries(ugv_firm pico_stdlib pico_multicore hardware_uart hardware_irq pico_stdio_usb)
 
 # Enable/Disable usb/uart standard output (1 for enable, 0 for disable)
 # Serial default baud: 115200

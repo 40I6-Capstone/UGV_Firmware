@@ -9,11 +9,14 @@
  * @copyright Copyright (c) 2022
  * 
  */
-
+#pragma once
 
 #include <stdlib.h>
 #include <memory.h>
 #include <stdint.h>
+
+
+#define PACKET_MAX_SIZE 256 
 
 /**
  * @brief packet codes, usually sent ahead of the packet itself
@@ -21,9 +24,10 @@
  */
 typedef enum
 {
-    WHO_AM_I,
-    NODE_STATE,
-    PATH
+    PACKET_WHO_AM_I,
+    PACKET_NODE_STATE,
+    PACKET_PATH,
+    PACKET_COUNT // Dont add after this, always before
 } packet_code;
 
 /**
@@ -64,29 +68,29 @@ typedef struct
     double v;       // Linear velocity
     double theta;   // Heading
     uint64_t ts_ms; // Timestamp in ms
-} packet_path_point;
+} packet_path_point; // 40 bytes
 
 
 /**
- * @brief loads data into a packet structure (should be allocated already) from a byte buffer
+ * @brief Copies data into a packet structure (should be allocated already) from a byte buffer
  * 
  * @param packet packet to load data into
  * @param buff buffer to load bytes from
  * @param size size of packet structure, a sizeof() call is expected here
  */
-static inline void packet_from_buff(void *packet, char *buff, size_t size)
+static inline void packet_from_buff(void *packet, uint8_t *buff, size_t size)
 {
     memcpy(packet, buff, size);
 }
 
 /**
- * @brief loads data into a buffer (buffer should be allocated already), from a packet structure
+ * @brief Copies data into a buffer (buffer should be allocated already), from a packet structure
  * 
  * @param buff buffer to load bytes into
  * @param packet packet to get bytes from 
  * @param size size of packet structure, a sizeof() call is expected here
  */
-static inline void buff_from_packet(char *buff, void *packet, size_t size)
+static inline void buff_from_packet(uint8_t *buff, void *packet, size_t size)
 {
     memcpy(buff, packet, size);
 }
