@@ -13,13 +13,7 @@
 
 #include <vector>
 #include <stdint.h>
-#include <pico/stdlib.h>
-#include "hardware/uart.h"
-#include "hardware/irq.h"
-#include "../../common_lib/network_defines.h"
-
-#define UART uart0
-#define UART_IRQ UART0_IRQ
+#include "network_defines.h"
 
 class UARTManager
 {
@@ -27,45 +21,25 @@ private:
     uint8_t buff[PACKET_MAX_SIZE];
     volatile bool parsed;
     volatile packet_code parsed_packet_code;
-    void int_handler();
-    UARTManager(uint tx, uint rx, uint baud, irq_handler_t irq);
-    std::vector<void (*)()> subscribers[PACKET_COUNT];
+    std::vector<void (*)()> subscribers[PACKET_TYPES_COUNT];
     void publish();
 
 public:
-    UARTManager get_instance();
+    UARTManager();
     void loop();
     void load(void *dst, size_t size);
     void send(void *src, size_t size);
     void subscribe(void (*func)(), packet_code code);
+    void int_handler();
 };
 
 /**
- * @brief Construct a new UARTManager::UARTManager object, will also configure UART hardware
- *
- * @param tx tx pin
- * @param rx rx pin
- * @param baud baud rate
- * @param irq Pointer to function that will run when uart interrupt is triggered,
- * create a function of type irq_handler_t and call uartmanager->int-handler()
+ * @brief Construct a new UARTManager::UARTManager object
  */
-UARTManager::UARTManager(uint tx, uint rx, uint baud, irq_handler_t irq)
+UARTManager::UARTManager()
 {
     // Initial member states
     this->parsed = true;
-
-    // Initialize hardware
-    uart_init(UART, baud); // Make sure this is consistent with the baud setup on the ESP-01s
-
-    // Setting up GPIO pins
-    gpio_set_function(tx, GPIO_FUNC_UART);
-    gpio_set_function(rx, GPIO_FUNC_UART);
-
-    // Enabling interrupt
-
-    irq_set_exclusive_handler(UART_IRQ, irq);
-    irq_set_enabled(UART_IRQ, true);
-    uart_set_irq_enables(UART, true, false);
 }
 
 void UARTManager::int_handler()
@@ -82,7 +56,7 @@ void UARTManager::int_handler()
     static uint8_t rx_count = 0; // Count of the bytes read
 
     // Run the state machine for however many bytes are available
-    while (uart_is_readable(UART))
+    while (Serial.available() > 0)
     {
         switch (uart_state)
         {
@@ -90,9 +64,9 @@ void UARTManager::int_handler()
         case IDLE:
             if (!this->parsed)
             {
-                packet = (packet_code)uart_getc(UART); // First byte, set the code to determine how the rest are parsed
-                uart_state = PARSING;                  // Set state to parsing
-                rx_count = 0;                          // Reset rx count
+                packet = (packet_code)Serial.read(); // First byte, set the code to determine how the rest are parsed
+                uart_state = PARSING;                // Set state to parsing
+                rx_count = 0;                        // Reset rx count
             }
             break;
 
@@ -106,7 +80,7 @@ void UARTManager::int_handler()
                 break;
             }
             // Update buffer
-            this->buff[rx_count++] = uart_getc(UART);
+            this->buff[rx_count++] = Serial.read();
             // If enough is read to save to a struct, reset state and raise flag
             if (rx_count > packet_size)
             {
@@ -127,7 +101,7 @@ void UARTManager::loop()
 {
     if (this->parsed)
     {
-        for (size_t i = 0; i< subscribers[parsed_packet_code].size(); i++)
+        for (size_t i = 0; i < subscribers[parsed_packet_code].size(); i++)
         {
             subscribers[parsed_packet_code][i]();
         }
@@ -163,9 +137,10 @@ void UARTManager::load(void *dst, size_t size)
  * @param src pointer to struct to send
  * @param size size of struct, a sizeof() call is expected here
  */
-void UARTManager::send(void *src, size_t size)
+void UARTManager::send(void *src, size_t size) // TODO send packet code
 {
     uint8_t *tx_buff = (uint8_t *)malloc(size); // Buffer of bytes to send through uart
     buff_from_packet(tx_buff, src, size);
-    uart_write_blocking(UART, (uint8_t *)tx_buff, size); // Write to UART
+    Serial.write((uint8_t *)tx_buff, size); // Write to UART
+    free(tx_buff);
 }
