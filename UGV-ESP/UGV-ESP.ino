@@ -2,6 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <stdio.h>
+#include "network_defines.hpp"
 //#include <WebSocketsClient.h>
 
 WiFiClient client;
@@ -108,20 +109,32 @@ void loop() {
   R - RESPOND_CHECK STATE
   */
 
+//    packet_type = {  # dictionary for packet type
+//        "who_am_i": '0',
+//        "node": '1',
+//        "path": '2'
+//    }
+
+
   // FSM
   switch (state){
 
     case 'I': // IDLE STATE
       Serial.printf("[FSM] IDLE STATE \n");
-      getMessage(4);
+      getMessage(1);
       message = buffer;
-      if(message.compareTo("node")==0){
+      if(message.compareTo("1")==0){
         state = 'S'; // go to send_state
         break;
       }
         
-      else if(message.compareTo("path")==0){
+      else if(message.compareTo("2")==0){
         state = 'A'; //go to path allocation state
+        break;
+      }
+
+      else {
+        state = 'I';
         break;
       }
 
@@ -140,24 +153,29 @@ void loop() {
 
     case 'P': // PATH RECEIVE STATE
       Serial.printf("[FSM] PATH RECEIVE STATE \n");
-      getMessage(40);
+      getMessage(40); //TODO - update this based on decided packet size
       packet = buffer;
       // TODO - add code for converting received data 
       parsedata(packet);
+      packet_path_point path_packet;
+      packet_from_buff(&path_packet,buffer,sizeof(buffer));
       state = 'R'; // go to respond check state
       break;
 
     case 'R': // RESPOND_CHECK STATE
       Serial.printf("[FSM] RESPOND_CHECK STATE \n");
-      getMessage(4);
-      message = buffer;
-      if(message.compareTo("good")==0){
-        state = 'I'; // go back to idle
+      if(packet.length() == 40){ // TODO - Update this based on decided packet
+        client.print("g"); // send g for good
+        
+        // TODO - Add code to transmit processed data over UART
+        //Serial.print(path_packet);
+        Serial.print(packet);
+        state = 'I';
         break;
       }
-        
-      else if(message.compareTo("nope")==0){
-        state = 'A'; //go back to allocation state
+      else{
+        client.print("n"); // send n for nope
+        state = 'A';
         break;
       }
       
