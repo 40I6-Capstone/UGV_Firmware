@@ -23,7 +23,11 @@ typedef enum
 {
     WHO_AM_I,
     NODE_STATE,
-    PATH
+    PATH,
+    STOP,
+    GO,
+    DIAG_STATE,
+    ESP_STATUS
 } packet_code;
 
 /**
@@ -50,7 +54,10 @@ typedef struct
     double theta;     // Heading
     uint64_t ts_ms;   // Timestamp in ms
     node_state state; // Current executing state of the node
-
+    double x_exp;     // expected x position relative to the start based on path
+    double y_exp;     // expected y position relative to the start based on path
+    double velocity_exp; // expected current velocity based on path
+    double heading_exp; // expected current heading based on path
 } packet_node_state;
 
 /**
@@ -66,6 +73,15 @@ typedef struct
     uint64_t ts_ms; // Timestamp in ms
 } packet_path_point;
 
+
+typedef struct 
+{
+    double ts_ms; // Timestamp in ms
+    double v_right; // current velocity of the right motor
+    double d_right; // cumulative distance the right motor has traveled since time 0
+    double v_left; // current velocity of the left motor
+    double d_left; // cumulative distance the left motor has traveled since time 0
+}diagnostic_node_state;
 
 /**
  * @brief loads data into a packet structure (should be allocated already) from a byte buffer
@@ -86,7 +102,7 @@ static inline void packet_from_buff(void *packet, char *buff, size_t size)
  * @param packet packet to get bytes from 
  * @param size size of packet structure, a sizeof() call is expected here
  */
-static inline void buff_from_packet(char *buff, void *packet, size_t size)
+static inline void buff_from_packet(void *buff, void *packet, size_t size)
 {
     memcpy(buff, packet, size);
 }

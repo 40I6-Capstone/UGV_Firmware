@@ -3,9 +3,10 @@
 #include <WiFiClient.h>
 #include <stdio.h>
 #include "network_defines.hpp"
-//#include <WebSocketsClient.h>
+#include <WebSocketsClient.h>
 
-WiFiClient client;
+//WiFiClient client;
+WebSocketsClient client;
 
 const unsigned long duration = 5000;
 unsigned long timeLatestCycle = 0;
@@ -36,21 +37,19 @@ String message;
 String packet;
 char buffer[75]; //Actual amount is 73
 
-void getMessage(int len){
-//    char buffer[len];
-
-    if(client.available()){
-       while(i<(len-1)){
-          char c = client.read();
-          buffer[i] = c;
-          i++;
-       }
-       i=0;
-       Serial.println(buffer);
-    }
-
-//    return buffer;
-}
+//void getMessage(int len){
+////    char buffer[len];
+//
+//       while(i<(len-1)){
+//          char c = client.read();
+//          buffer[i] = c;
+//          i++;
+//       }
+//       i=0;
+//       Serial.println(buffer);
+//
+////    return buffer;
+//}
 
 void setup() {
   Serial.begin(115200); //baud rate for serial communication
@@ -198,4 +197,42 @@ void parsedata(String data_in){
   y_exp = data_in.substring(49,57);
   velocity_exp = data_in.substring(57,65);
   heading_exp = data_in.substring(65,73);
+}
+
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+
+  switch(type) {
+    case WStype_DISCONNECTED:
+      USE_SERIAL.printf("[WSc] Disconnected!\n");
+      break;
+    case WStype_CONNECTED: {
+      USE_SERIAL.printf("[WSc] Connected to url: %s\n", payload);
+
+      // send message to server when Connected
+      webSocket.sendTXT("Connected");
+    }
+      break;
+    case WStype_TEXT:
+      USE_SERIAL.printf("[WSc] get text: %s\n", payload);
+
+      // send message to server
+      // webSocket.sendTXT("message here");
+      break;
+    case WStype_BIN:
+      USE_SERIAL.printf("[WSc] get binary length: %u\n", length);
+      hexdump(payload, length);
+
+      // send data to server
+      // webSocket.sendBIN(payload, length);
+      break;
+        case WStype_PING:
+            // pong will be send automatically
+            USE_SERIAL.printf("[WSc] get ping\n");
+            break;
+        case WStype_PONG:
+            // answer to a ping we send
+            USE_SERIAL.printf("[WSc] get pong\n");
+            break;
+    }
+
 }
