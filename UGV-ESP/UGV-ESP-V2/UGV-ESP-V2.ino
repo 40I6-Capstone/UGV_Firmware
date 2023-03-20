@@ -11,11 +11,9 @@ WebSocketsClient webSocket;
 
 String message;
 String *packet;
-char buffer[75]; //Actual amount is 73
+char buffer[100]; 
 
-packet_node_state *nodePacketPtr, nodePacket;
-packet_path_point *pathPacketPtr, pathPacket;
-diagnostic_node_state *diagPacketPtr, diagPacket;
+
 //node_packet = &node;
 //path_packet = &path;
 //diag_packet = &diag;
@@ -41,7 +39,10 @@ diagnostic_node_state *diagPacketPtr, diagPacket;
 
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-
+  packet_node_state *nodePacketPtr, nodePacket;
+  packet_path_point *pathPacketPtr, pathPacket;
+  diagnostic_node_state *diagPacketPtr, diagPacket;
+  
   switch(type) {
     case WStype_DISCONNECTED:
       USE_SERIAL.printf("[WSc] Disconnected!\n");
@@ -60,6 +61,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       // send message to server
       USE_SERIAL.println((char*)payload);
       webSocket.sendTXT(payload);
+
       
       if(payload[0] == '2'){ // path packet
 //        USE_SERIAL.printf("Index Worked! \n");
@@ -75,9 +77,14 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 //        message = message.substring(1);
 //        USE_SERIAL.println(sizeof(message)); // 12 - not sure why
 //        *packet = message.substring(1);
-          payload++; // increment pointer to get rid of the pcket code digit
-          buff_from_packet(pathPacketPtr,payload,sizeof(packet_path_point));      
-//        USE_SERIAL.printf("x: %f",pathPacketPtr->x); // check if values copied in correctly
+        payload++; // increment pointer to get rid of the pcket code digit
+        buff_from_packet(&pathPacketPtr,payload,sizeof(packet_path_point));
+        USE_SERIAL.println(pathPacket.x);     
+        USE_SERIAL.printf("x: %f",pathPacket.x); // check if values copied in correctly
+//        USE_SERIAL.printf("xd: %d \n",nodePacket.x); // check if values copied in correctly
+//        USE_SERIAL.print(nodePacket.x); // check if values copied in correctly
+//        USE_SERIAL.printf("y: %f \n",nodePacket.y); // check if values copied in correctly
+//        USE_SERIAL.printf("ts_ms: %f \n",nodePacket.ts_ms); // check if values copied in correctly
 //        USE_SERIAL.printf("y: %f",pathPacketPtr->y);
         webSocket.sendTXT("done");
       }
@@ -96,29 +103,56 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     case WStype_BIN:
       USE_SERIAL.printf("[WSc] get binary length: %s\n", String(length));
       hexdump(payload, length); //  print out the contents of a buffer (to serial) in hexadecimal format. The function takes in two arguments - the first is a pointer to the buffer that contains the data to be printed, and the second is the length of the buffer.
-      
-//      String really = (char * )payload; 
-//      USE_SERIAL.println(really);
-      
-//      USE_SERIAL.printf("Payload decimal: %d  \n", &payload);
-//      USE_SERIAL.printf("Payload string: %s \n", &payload);
-//      USE_SERIAL.printf("Payload float: %f \n", &payload);
-      USE_SERIAL.printf("Payload unsigned: %u \n", &payload);
+      uint8_t firstByte = *payload;
+      Serial.println(" ");
+      Serial.print("First byte: ");
+      Serial.println(firstByte, HEX);
 
-      // TODO - HOW TO INDEX BINARY ON ARDUINO SIDE
-      if(atoi((const char*)&payload[1]) == 2){ // path packet
+
+      if(payload[0] == '2'){ // path packet
 //      parsedata(payload); // may need to index payload OR ignore the first bit in parse function
-        USE_SERIAL.printf("Index Worked!");
-//        buff_from_packet((void*)path_packet,payload,sizeof(path_packet));
+        payload++; // increment the pointer to skip the packet code when copying into buffer
+        USE_SERIAL.printf("Binary Index Worked! \n");
+//        buff_from_packet(&pathPacketPtr,payload,sizeof(packet_path_point));
+        message = converter(payload); //convert payload to a string
+//        path_parsedata(message, pathPacketPtr);
+        pathPacket.x = message.substring(0,8).toDouble();
+        pathPacket.y = message.substring(8,16).toDouble();
+        pathPacket.v = message.substring(16,24).toDouble();
+        pathPacket.theta = message.substring(24,32).toDouble();
+        pathPacket.ts_ms = message.substring(32,40).toInt();
+//        USE_SERIAL.printf("x: %f \n",pathPacket.x);
+//        USE_SERIAL.printf("y: %f \n",pathPacket.y);
+//        USE_SERIAL.printf("v: %f \n",pathPacket.v);
+//        USE_SERIAL.printf("theta: %f \n",pathPacket.theta);
+//        USE_SERIAL.printf("ts_ms: %i \n",pathPacket.ts_ms);
+// TODO - HOW TO send data to pico from here
+        payload--;
+        USE_SERIAL.write(payload)
         webSocket.sendTXT("done");
+        break;
       }
       if(payload[0] == '1'){ // send current node state packet
-//        buff_from_packet((void*)node_packet,payload,sizeof(node_packet));
-        webSocket.sendTXT("done");
+//        payload++; // increment the pointer to skip the packet code when copying into buffer
+        // QUESTION - how will PICO know to send here? Do we just tell it over serial what we want?
+        USE_SERIAL.readBytes(buffer,sizeof(packet_node_state)); // receive current node state packet from Pico
+//        packet_from_buff((void*)node_packet,payload,sizeof(node_packet));
+        webSocket.sendTXT(buffer);
+        break;
       }
-      if(payload[0] == '6'){ // send diagnostic node state packet
+      if(payload[0] == '5'){ // send diagnostic node state packet
+        payload++; // increment the pointer to skip the packet code when copying into buffer
+        //        TODO - HOW TO GET DATA HERE FROM PICO
+        message = converter(payload); //convert payload to a string
+        diagPacket.ts_ms = message.substring(0,8).toInt();
+        diagPacket.v_right = message.substring(8,16).toDouble();
+        diagPacket.d_right = message.substring(16,24).toDouble();
+        diagPacket.v_left = message.substring(24,32).toDouble();
+        diagPacket.d_left = message.substring(32,40).toDouble();
 //        buff_from_packet((void*)diag_packet,payload,sizeof(diag_packet));
-        webSocket.sendTXT("done");
+        USE_SERIAL.readBytes(buffer,sizeof(packet_node_state));
+        webSocket.sendTXT(buffer);
+        break;
       }
       // send data to server
       // webSocket.sendBIN(payload, length);
@@ -139,7 +173,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 }
 
 void setup() {
-
+    
   USE_SERIAL.begin(115200); //baud rate for serial communication
 
   USE_SERIAL.setDebugOutput(false);
@@ -153,10 +187,10 @@ void setup() {
     USE_SERIAL.flush();
     delay(1000);
   }
-  // WiFi.begin("JM Pixel 7 Pro", "Julian1499");
-  // WiFi.begin("BELL864", "F7EAE5311517");
+   WiFi.begin("JM Pixel 7 Pro", "Julian1499");
+//  WiFi.begin("BELL864", "F7EAE5311517");
 //  WiFi.begin("OilLock", "oillock-capstone");
-    WiFi.begin();
+//    WiFi.begin("Crocodile", "Crazyhorse65");
 
 
   while(WiFi.status() != WL_CONNECTED) { //wait until we are connected to the wifi
@@ -165,8 +199,8 @@ void setup() {
   }
 
   // server address, port and URL
-  //webSocket.begin("192.168.244.243", 1234, "/");
-  webSocket.begin("10.0.0.187", 1234, "/");
+  webSocket.begin("192.168.244.243", 1234, "/");
+//  webSocket.begin("192.168.2.23", 1234, "/");
 
   // event handler
   webSocket.onEvent(webSocketEvent);
@@ -190,18 +224,13 @@ void loop() {
 }
 
 
-void parsedata(String data_in){
+void path_parsedata(String data_in, packet_path_point *path){
   // 4 doubles + 1 uint64 + 1 char + 4 double = 73 total bytes
-  X = data_in.substring(0,8);
-  Y = data_in.substring(8,16);
-  Velocity = data_in.substring(16,24);
-  Heading = data_in.substring(24,32);
-  ts_ms = data_in.substring(32,40);
-  State = data_in.substring(40,41);
-  x_exp = data_in.substring(41,49);
-  y_exp = data_in.substring(49,57);
-  velocity_exp = data_in.substring(57,65);
-  heading_exp = data_in.substring(65,73);
+  (*path).x = data_in.substring(0,8).toDouble();
+  (*path).y = data_in.substring(8,16).toDouble();
+  (*path).v = data_in.substring(16,24).toDouble();
+  (*path).theta = data_in.substring(24,32).toDouble();
+  (*path).ts_ms = data_in.substring(32,40).toInt();
 }
 
 String converter(uint8_t *str){
