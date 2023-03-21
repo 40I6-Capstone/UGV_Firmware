@@ -39,8 +39,8 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     case WStype_TEXT:
       USE_SERIAL.printf("[WSc] get text: %s\n", payload);
       // send message to server
-      USE_SERIAL.println((char*)payload);
-      webSocket.sendTXT(payload);
+//      USE_SERIAL.println((char*)payload);
+//      webSocket.sendTXT(payload);
       break;
       
     case WStype_BIN:
@@ -76,13 +76,13 @@ void setup() {
 
   USE_SERIAL.setDebugOutput(false);
 
-  USE_SERIAL.println();
-  USE_SERIAL.println();
-  USE_SERIAL.println();
+//  USE_SERIAL.println();
+//  USE_SERIAL.println();
+//  USE_SERIAL.println();
 
   for(uint8_t t = 4; t > 0; t--) {
-    USE_SERIAL.printf("[SETUP] BOOT WAIT %d...\n", t);
-    USE_SERIAL.flush();
+//    USE_SERIAL.printf("[SETUP] BOOT WAIT %d...\n", t);
+//    USE_SERIAL.flush();
     delay(1000);
   }
    WiFi.begin("JM Pixel 7 Pro", "Julian1499");
@@ -93,7 +93,7 @@ void setup() {
 
   while(WiFi.status() != WL_CONNECTED) { //wait until we are connected to the wifi
     delay(200);
-    Serial.print(".");
+//    Serial.print(".");
   }
 
   // server address, port and URL
