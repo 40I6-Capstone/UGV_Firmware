@@ -54,6 +54,19 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       
       if(payload[0] == '2'){ // path packet
         USE_SERIAL.write(payload, length); // write entire payload to Pico, it will detect the packet code and store the stream accordingly
+        // TODO - ADD OKAY
+        break;
+      }
+
+      if(payload[0] == '3'){ // STOP
+        USE_SERIAL.write(3);
+        // TODO - ADD OKAY
+        break;
+      }
+
+      if(payload[0] == '4'){ // GO
+        USE_SERIAL.write(4); 
+        // TODO - ADD OKAY
         break;
       }
 
