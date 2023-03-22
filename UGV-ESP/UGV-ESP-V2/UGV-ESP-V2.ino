@@ -12,7 +12,7 @@ WebSocketsClient webSocket;
 String message;
 String *packet;
 uint8_t node_state_buffer[sizeof(packet_node_state)+1];
-uint8_t path_packet_buffer[sizeof(packet_path_point)+1];
+uint8_t path_packet_buffer[50*sizeof(packet_path_point)+1];
 uint8_t diag_packet_buffer[sizeof(diagnostic_node_state)+1];
 
 
@@ -54,19 +54,19 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       
       if(payload[0] == '2'){ // path packet
         USE_SERIAL.write(payload, length); // write entire payload to Pico, it will detect the packet code and store the stream accordingly
-        // TODO - ADD OKAY
+        // TODO - ADD OKAY?
         break;
       }
 
       if(payload[0] == '3'){ // STOP
         USE_SERIAL.write(3);
-        // TODO - ADD OKAY
+        // TODO - ADD OKAY?
         break;
       }
 
       if(payload[0] == '4'){ // GO
         USE_SERIAL.write(4); 
-        // TODO - ADD OKAY
+        // TODO - ADD OKAY?
         break;
       }
 
