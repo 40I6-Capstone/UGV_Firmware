@@ -12,7 +12,7 @@ WebSocketsClient webSocket;
 String message;
 String *packet;
 uint8_t node_state_buffer[sizeof(packet_node_state)+1];
-uint8_t path_packet_buffer[50*sizeof(packet_path_point)+1];
+uint8_t path_packet_buffer[sizeof(packet_path_point)+4];
 uint8_t diag_packet_buffer[sizeof(diagnostic_node_state)+1];
 
 
@@ -25,13 +25,13 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   
   switch(type) {
     case WStype_DISCONNECTED:
-      USE_SERIAL.printf("[WSc] Disconnected!\n");
+//      USE_SERIAL.printf("[WSc] Disconnected!\n");
       break;
       
     case WStype_CONNECTED: {
-      USE_SERIAL.printf("[WSc] Connected!");
+//      USE_SERIAL.printf("[WSc] Connected!");
       // send message to server when Connected
-      webSocket.sendTXT("Client Connected!");
+//      webSocket.sendTXT("Client Connected!");
       //webSocket.sendBIN(pdata, sizeof(data));
     }
       break;
@@ -71,11 +71,12 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       }
 
       if(payload[0] == '5'){ // send diagnostic node state packet
-        USE_SERIAL.write(5); // Send 5 over serial to Pico, so that PICO responds with diagnostic state packet
-        USE_SERIAL.readBytes(diag_packet_buffer,1);
-        webSocket.sendBIN(diag_packet_buffer,1); // Forward the diag state packet binary stream to the Server
-//        USE_SERIAL.readBytes(diag_packet_buffer,sizeof(diagnostic_node_state));
-//        webSocket.sendBIN(diag_packet_buffer,sizeof(diag_packet_buffer)); // Forward the diag state packet binary stream to the Server
+        USE_SERIAL.write(payload,sizeof(packet_path_point)+1); // Send 5 over serial to Pico, so that PICO responds with diagnostic state packet
+//        message = USE_SERIAL.read();
+//        webSocket.sendTXT(message);
+//        webSocket.sendBIN(diag_packet_buffer,7); // Forward the diag state packet binary stream to the Server
+        USE_SERIAL.readBytes(path_packet_buffer,sizeof(packet_path_point)+1);
+        webSocket.sendBIN(path_packet_buffer,sizeof(packet_path_point)+1); // Forward the diag state packet binary stream to the Server
         break;
       }
 
@@ -95,21 +96,21 @@ void setup() {
 //  USE_SERIAL.println();
 //  USE_SERIAL.println();
 
-  for(uint8_t t = 4; t > 0; t--) {
-//    USE_SERIAL.printf("[SETUP] BOOT WAIT %d...\n", t);
-//    USE_SERIAL.flush();
-    delay(1000);
-  }
+//  for(uint8_t t = 4; t > 0; t--) {
+////    USE_SERIAL.printf("[SETUP] BOOT WAIT %d...\n", t);
+////    USE_SERIAL.flush();
+//    delay(1000);
+//  }
    WiFi.begin("JM Pixel 7 Pro", "Julian1499");
 //  WiFi.begin("BELL864", "F7EAE5311517");
 //  WiFi.begin("OilLock", "oillock-capstone");
 //  WiFi.begin();
 
 
-  while(WiFi.status() != WL_CONNECTED) { //wait until we are connected to the wifi
-    delay(200);
-//    Serial.print(".");
-  }
+//  while(WiFi.status() != WL_CONNECTED) { //wait until we are connected to the wifi
+//    delay(200);
+////    Serial.print(".");
+//  }
 
   // server address, port and URL
   webSocket.begin("192.168.244.243", 1234, "/");
