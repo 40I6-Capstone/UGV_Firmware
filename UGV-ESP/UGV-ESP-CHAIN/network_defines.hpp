@@ -48,11 +48,12 @@ typedef enum
  */
 typedef struct
 {
+    char code;
     double x;         // x position
     double y;         // y position
     double v;         // Linear velocity
     double theta;     // Heading
-    uint32_t ts_ms;   // Timestamp in ms
+    uint64_t ts_ms;   // Timestamp in ms
     node_state state; // Current executing state of the node
     double x_exp;     // expected x position relative to the start based on path
     double y_exp;     // expected y position relative to the start based on path
@@ -66,17 +67,16 @@ typedef struct
  */
 typedef struct
 {
+    char code;
     double x;       // x position
     double y;       // y position
-    double v;       // Linear velocity
-    double theta;   // Heading
-    uint32_t ts_ms; // Timestamp in ms
 } packet_path_point;
 
 
 typedef struct 
 {
-    uint32_t ts_ms; // Timestamp in ms
+    char code;
+    uint64_t ts_ms; // Timestamp in ms
     double v_right; // current velocity of the right motor
     double d_right; // cumulative distance the right motor has traveled since time 0
     double v_left; // current velocity of the left motor
