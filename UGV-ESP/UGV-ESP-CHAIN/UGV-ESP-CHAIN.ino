@@ -12,7 +12,7 @@ WebSocketsClient webSocket;
 String message;
 String *packet;
 uint8_t node_state_buffer[sizeof(packet_node_state)+1];
-uint8_t path_packet_buffer[sizeof(packet_path_point)+4];
+uint8_t path_packet_buffer[sizeof(packet_path_point)+1];
 uint8_t diag_packet_buffer[sizeof(diagnostic_node_state)+1];
 
 
