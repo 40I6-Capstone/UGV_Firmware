@@ -20,7 +20,7 @@ uint8_t diag_packet_buffer[sizeof(diagnostic_node_state)+1];
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   packet_node_state *nodePacketPtr, nodePacket;
-  packet_path_point *pathPacketPtr, pathPacket;
+  packet_path_point *pathPacketPtr;
   diagnostic_node_state *diagPacketPtr, diagPacket;
   
   switch(type) {
@@ -53,7 +53,9 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       }
       
       if(payload[0] == '2'){ // path packet
-        USE_SERIAL.write(payload, length);
+        // USE_SERIAL.write(payload, length);
+        buff_from_packet(pathPacketPtr, payload, length);
+        USE_SERIAL.printf("x = %f\n", pathPacketPtr->x);
 //        USE_SERIAL.write(payload, sizeof(packet_path_point)+1); // write entire payload to Pico, it will detect the packet code and store the stream accordingly
         // TODO - ADD acknowledgement?
         break;

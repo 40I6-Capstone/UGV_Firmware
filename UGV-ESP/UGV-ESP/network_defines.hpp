@@ -102,7 +102,11 @@ static inline void packet_from_buff(void *packet, char *buff, size_t size)
  * @param packet packet to get bytes from 
  * @param size size of packet structure, a sizeof() call is expected here
  */
-static inline void buff_from_packet(void *buff, void *packet, size_t size)
+static inline void buff_from_packet(packet_path_point *buff, void *packet, size_t size)
 {
-    memcpy(buff, packet, size);
+    // double *x = packet[1];
+    // double *y = packet[9];
+    // memcpy(buff, packet, size);
+    buff = ((packet_path_point *)packet);
+
 }
