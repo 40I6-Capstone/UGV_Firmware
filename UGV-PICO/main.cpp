@@ -21,7 +21,9 @@
 #include "lib/hw_defines.h"
 #include "../common_lib/network_defines.h"
 
-#define TEST_UART
+#include "lib/MotorControl.hpp"
+
+// #define TEST_UART
 
 UARTManager *uart_man;
 
@@ -31,66 +33,43 @@ void core1_main()
 
     while (true)
     {
-        tight_loop_contents();
+        // tight_loop_contents();
+        uart_man->loop();
     }
 }
 
 // Main function to execute on core 0
 void core0_main()
 {
+    std::cout << "SETTING UP MOTORS" << std::endl;
+    MotorControl *motor_left = new MotorControl(PIN_MOTOR_LA, PIN_MOTOR_LB);
+    MotorControl *motor_right = new MotorControl(PIN_MOTOR_RA, PIN_MOTOR_RB);
 
-    // Initalize uart manager
-
-    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200, []()
-                               { uart_man->int_handler(); });
+    motor_left->setReverse(false);
+    motor_right->setReverse(false);
     while (true)
     {
-
-        uart_man->loop();
-
-#ifdef TEST_UART
-        // Subscribe a printing function
-        uart_man->subscribe([]()
-                            {
-                                packet_path_point pack;
-                                uart_man->load(&pack, sizeof(pack));
-                                std::cout << "x: " << pack.x << std::endl;
-                                std::cout << "y: " << pack.y << std::endl;
-                                std::cout << "v: " << pack.v << std::endl;
-                                std::cout << "theta: " << pack.theta << std::endl;
-                                std::cout << "ts_ms: " << pack.ts_ms << std::endl; },
-                            PACKET_PATH);
-
-        static uint32_t uart_test_ts = 0;
-        static packet_node_state pack = {
-            .x = 10.0,
-            .y = -3.0,
-            .v = -100.0,
-            .theta = M_PI,
-            .ts_ms = 0,
-            .state = NODE_IDLE};
-
-        pack.ts_ms = to_ms_since_boot(get_absolute_time()); // Update timestamp
-        // Every 2 seconds, send the packet over
-        if (to_ms_since_boot(get_absolute_time()) - uart_test_ts > 2000)
-        {
-            uart_man->send(&pack, sizeof(pack));
-            uart_test_ts = to_ms_since_boot(get_absolute_time());
-        }
-#endif
+        motor_left->run(1.0);
+        motor_right->run(1.0);
     }
 }
 
 int main()
 {
-
     // Initialize USB bus
     stdio_usb_init(); // Seems that this needs to happen before starting core1, even if that's where the printing happens
 
-#ifdef TEST_UART
+    // Wait until USB is connected before doing anything else
     while (!stdio_usb_connected())
         tight_loop_contents();
-#endif
+
+    std::cout << "USB CONNECTED" << std::endl;
+
+    /******* INITIALIZE HARDWARE COMMON TO EACH CORE *******/
+
+    // Initalize uart manager
+    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200, []()
+                               { uart_man->int_handler(); });
 
     multicore_launch_core1(core1_main); // Start up core1
     core0_main();                       // core0 main function
