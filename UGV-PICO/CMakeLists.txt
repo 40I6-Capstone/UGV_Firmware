@@ -14,6 +14,8 @@ add_executable(ugv_firm
 	main.cpp
 	)
 
+# add_library(motor_control ${PROJECT_SOURCE_DIR}/lib/MotorControl.cpp ${PROJECT_SOURCE_DIR}/lib/MotorControl.hpp)
+
 # Pull in our pico_stdlib which pulls in commonl
 target_link_libraries(ugv_firm pico_stdlib pico_multicore hardware_uart hardware_irq pico_stdio_usb hardware_pwm)
 

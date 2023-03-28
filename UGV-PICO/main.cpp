@@ -26,51 +26,82 @@
 // #define TEST_UART
 
 UARTManager *uart_man;
-
-// Main function to execute on core 1
+MotorControl *motor_right;
+MotorControl *motor_left;
+// Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
 {
 
-    while (true)
+    // Initalize uart manager
+    // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200, []()
+    //                            { uart_man->int_handler(); });
+
+    // uart_man->subscribe([]()
+    //                     {
+    //                             packet_path_point pack;
+    //                             uart_man->load(&pack, sizeof(pack));
+    //                             std::cout << "x: " << pack.x << std::endl;
+    //                             std::cout << "y: " << pack.y << std::endl;
+    //                             std::cout << "v: " << pack.v << std::endl;
+    //                             std::cout << "theta: " << pack.theta << std::endl;
+    //                             std::cout << "ts_ms: " << pack.ts_ms << std::endl; },
+    //                     PACKET_PATH);
+
+    while (1)
     {
+        // printf("Core1 Ping\n");
         // tight_loop_contents();
-        uart_man->loop();
+        // sleep_ms(100);
+        // uart_man->loop();
+        gpio_put(PICO_DEFAULT_LED_PIN, 1);
+        sleep_ms(500);
+        gpio_put(PICO_DEFAULT_LED_PIN, 0);
+        sleep_ms(500);
     }
 }
 
-// Main function to execute on core 0
+// Main function to execute on core 0 (primary core, interfaces with hardware)
 void core0_main()
 {
-    std::cout << "SETTING UP MOTORS" << std::endl;
-    MotorControl *motor_left = new MotorControl(PIN_MOTOR_LA, PIN_MOTOR_LB);
-    MotorControl *motor_right = new MotorControl(PIN_MOTOR_RA, PIN_MOTOR_RB);
-
+    motor_left = new MotorControl(PIN_MOTOR_LA, PIN_MOTOR_LB);
+    motor_right = new MotorControl(PIN_MOTOR_RA, PIN_MOTOR_RB);
     motor_left->setReverse(false);
     motor_right->setReverse(false);
-    while (true)
+
+    while (1)
     {
-        motor_left->run(1.0);
-        motor_right->run(1.0);
+        // printf("Core0 Ping\n");
+        int left;
+        int right;
+        std::cin >> left >> right;
+
+        double outputL = (double)left / 100.;
+        double outputR = (double)right / 100.;
+        std::cout << "Left: " << outputL << " | Right: " << outputR << std::endl;
+        motor_left->run(outputL);
+        motor_right->run(outputR);
+        // motor_left->run(0.5);
+        // motor_right->run(-0.5);
     }
 }
 
 int main()
 {
     // Initialize USB bus
-    stdio_usb_init(); // Seems that this needs to happen before starting core1, even if that's where the printing happens
+    // stdio_usb_init(); // Seems that this needs to happen before starting core1, even if that's where the printing happens
+    stdio_init_all();
+
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
     // Wait until USB is connected before doing anything else
     while (!stdio_usb_connected())
         tight_loop_contents();
-
-    std::cout << "USB CONNECTED" << std::endl;
+    printf("USB CONNECTED");
 
     /******* INITIALIZE HARDWARE COMMON TO EACH CORE *******/
 
-    // Initalize uart manager
-    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200, []()
-                               { uart_man->int_handler(); });
-
+    sleep_ms(10);
     multicore_launch_core1(core1_main); // Start up core1
     core0_main();                       // core0 main function
 }
