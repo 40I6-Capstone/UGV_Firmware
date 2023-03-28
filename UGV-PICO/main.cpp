@@ -78,8 +78,8 @@ void core0_main()
         double outputL = (double)left / 100.;
         double outputR = (double)right / 100.;
         std::cout << "Left: " << outputL << " | Right: " << outputR << std::endl;
-        motor_left->run(outputL);
-        motor_right->run(outputR);
+        motor_left->set(outputL);
+        motor_right->set(outputR);
         // motor_left->run(0.5);
         // motor_right->run(-0.5);
     }

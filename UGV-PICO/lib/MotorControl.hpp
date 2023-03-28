@@ -13,7 +13,7 @@ private:
 
 public:
     MotorControl(uint pinA, uint pinB);
-    void run(double output);
+    void set(double output);
     void setReverse(bool);
 };
 
@@ -41,7 +41,7 @@ void MotorControl::setReverse(bool isReversed)
 
 /// @brief set the motor at an output
 /// @param output output number -1.0 to 1.0
-void MotorControl::run(double output)
+void MotorControl::set(double output)
 {
     double out;
     // clamp output
@@ -52,7 +52,7 @@ void MotorControl::run(double output)
     else
         out = output;
 
-    uint16_t top = std::abs(out) * (double)wrapLevel;
+    uint16_t counterCompare = std::abs(out) * (double)wrapLevel;
 
     bool reverseOutput = (this->reverse * out) > 0;
 
@@ -63,13 +63,13 @@ void MotorControl::run(double output)
     }
     else if (!reverseOutput)
     {
-        writePin(pinA, top);
+        writePin(pinA, counterCompare);
         writePin(pinB, 0);
     }
     else
     {
         writePin(pinA, 0);
-        writePin(pinB, top);
+        writePin(pinB, counterCompare);
     }
 }
 
