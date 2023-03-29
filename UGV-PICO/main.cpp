@@ -22,12 +22,30 @@
 #include "../common_lib/network_defines.h"
 
 #include "lib/MotorControl.hpp"
+#include "lib/QuadEncoder.hpp"
 
 // #define TEST_UART
 
 UARTManager *uart_man;
 MotorControl *motor_right;
 MotorControl *motor_left;
+
+QuadEncoder *enc_right;
+QuadEncoder *enc_left;
+
+void gpio_isr(uint gpio, uint32_t events)
+{
+    if (gpio == PIN_ENC_RA || gpio == PIN_ENC_RB)
+    {
+        enc_right->updateTicks();
+    }
+    if (gpio == PIN_ENC_LA || gpio == PIN_ENC_LB)
+    {
+        enc_left->updateTicks();
+    }
+    
+}
+
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
 {
@@ -63,25 +81,38 @@ void core1_main()
 // Main function to execute on core 0 (primary core, interfaces with hardware)
 void core0_main()
 {
-    motor_left = new MotorControl(PIN_MOTOR_LA, PIN_MOTOR_LB);
     motor_right = new MotorControl(PIN_MOTOR_RA, PIN_MOTOR_RB);
-    motor_left->setReverse(false);
+    motor_left = new MotorControl(PIN_MOTOR_LA, PIN_MOTOR_LB);
     motor_right->setReverse(false);
+    motor_left->setReverse(false);
+
+    enc_right = new QuadEncoder(PIN_ENC_RA, PIN_ENC_RB);
+    enc_left = new QuadEncoder(PIN_ENC_LA, PIN_ENC_LB);
+    enc_right->setInverted(false);
+    enc_left->setInverted(false);
+
+    gpio_set_irq_enabled_with_callback(PIN_ENC_RA,GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
     while (1)
     {
         // printf("Core0 Ping\n");
         int left;
         int right;
-        std::cin >> left >> right;
+        // std::cin >> left >> right;
 
-        double outputL = (double)left / 100.;
-        double outputR = (double)right / 100.;
-        std::cout << "Left: " << outputL << " | Right: " << outputR << std::endl;
-        motor_left->set(outputL);
-        motor_right->set(outputR);
-        // motor_left->run(0.5);
-        // motor_right->run(-0.5);
+        // double outputL = (double)left / 100.;
+        // double outputR = (double)right / 100.;
+        // std::cout << "Left: " << outputL << " | Right: " << outputR << std::endl;
+        // motor_left->set(outputL);
+        // motor_right->set(outputR);
+        std::cout << "Left:"
+                  << enc_left->getPosition()
+                  << ",Right:"
+                  << enc_right->getPosition() 
+                  <<",LeftV:"
+                  << enc_left->getVelocity()
+                  << ",RightV:"
+                  << enc_right->getVelocity() << std::endl;
     }
 }
 
@@ -97,7 +128,7 @@ int main()
     // Wait until USB is connected before doing anything else
     while (!stdio_usb_connected())
         tight_loop_contents();
-    printf("USB CONNECTED");
+    printf("USB CONNECTED\n");
 
     /******* INITIALIZE HARDWARE COMMON TO EACH CORE *******/
 

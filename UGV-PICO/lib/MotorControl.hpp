@@ -32,15 +32,21 @@ MotorControl::MotorControl(uint pinA, uint pinB)
     writePin(this->pinB, 0);
 }
 
-/// @brief set the motor to be reversed
-/// @param isReversed
+/**
+ * @brief set the motor to be reversed
+ *
+ * @param isReversed
+ */
 void MotorControl::setReverse(bool isReversed)
 {
     this->reverse = isReversed ? -1. : 1.;
 }
 
-/// @brief set the motor at an output
-/// @param output output number -1.0 to 1.0
+/**
+ * @brief set the motor at an output
+ *
+ * @param output output number -1.0 to 1.0
+ */
 void MotorControl::set(double output)
 {
     double out;
