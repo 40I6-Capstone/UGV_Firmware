@@ -9,15 +9,14 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Initialize the SDK
 pico_sdk_init()
+add_subdirectory(lib/PICO_BMX160)
 
 add_executable(ugv_firm
 	main.cpp
 	)
 
-# add_library(motor_control ${PROJECT_SOURCE_DIR}/lib/MotorControl.cpp ${PROJECT_SOURCE_DIR}/lib/MotorControl.hpp)
-
 # Pull in our pico_stdlib which pulls in commonl
-target_link_libraries(ugv_firm pico_stdlib pico_multicore hardware_uart hardware_irq pico_stdio_usb hardware_pwm hardware_gpio pico_time)
+target_link_libraries(ugv_firm pico_stdlib pico_multicore pico_stdio_usb hardware_uart hardware_irq hardware_i2c hardware_pwm hardware_gpio pico_time pico_bmx160)
 
 # Enable/Disable usb/uart standard output (1 for enable, 0 for disable)
 # Serial default baud: 115200

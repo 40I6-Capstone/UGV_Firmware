@@ -23,6 +23,7 @@
 
 #include "lib/MotorControl.hpp"
 #include "lib/QuadEncoder.hpp"
+#include "lib/PICO_BMX160/PICO_DFRobot_BMX160.h"
 
 // #define TEST_UART
 
@@ -32,6 +33,8 @@ MotorControl *motor_left;
 
 QuadEncoder *enc_right;
 QuadEncoder *enc_left;
+
+DFRobot_BMX160 *imu;
 
 void gpio_isr(uint gpio, uint32_t events)
 {
@@ -43,7 +46,6 @@ void gpio_isr(uint gpio, uint32_t events)
     {
         enc_left->updateTicks();
     }
-    
 }
 
 // Main function to execute on core 1 (Mainly used for telemetry)
@@ -91,13 +93,19 @@ void core0_main()
     enc_right->setInverted(false);
     enc_left->setInverted(false);
 
-    gpio_set_irq_enabled_with_callback(PIN_ENC_RA,GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
+    gpio_set_irq_enabled_with_callback(PIN_ENC_RA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
+
+    imu = new DFRobot_BMX160(I2C_INST, PIN_SDA, PIN_SCL);
+    bool imuSetupSuccess;
+    imuSetupSuccess = imu->begin();
+    std::cout << (imuSetupSuccess ? "Setup Success" : "Setup Fail") << std::endl;
+    sleep_ms(100);
 
     while (1)
     {
         // printf("Core0 Ping\n");
-        int left;
-        int right;
+        // int left;
+        // int right;
         // std::cin >> left >> right;
 
         // double outputL = (double)left / 100.;
@@ -105,14 +113,35 @@ void core0_main()
         // std::cout << "Left: " << outputL << " | Right: " << outputR << std::endl;
         // motor_left->set(outputL);
         // motor_right->set(outputR);
-        std::cout << "Left:"
-                  << enc_left->getPosition()
-                  << ",Right:"
-                  << enc_right->getPosition() 
-                  <<",LeftV:"
-                  << enc_left->getVelocity()
-                  << ",RightV:"
-                  << enc_right->getVelocity() << std::endl;
+        // std::cout << "Left:"
+        //           << enc_left->getPosition()
+        //           << ",Right:"
+        //           << enc_right->getPosition()
+        //           << ",LeftV:"
+        //           << enc_left->getVelocity()
+        //           << ",RightV:"
+        //           << enc_right->getVelocity() << std::endl;
+
+        sBmx160SensorData_t Omagn, Ogyro, Oaccel;
+
+        imu->getAllData(&Omagn, &Ogyro, &Oaccel);
+        std::cout << "M |"
+                  << " X: " << Omagn.x
+                  << " Y: " << Omagn.y
+                  << " Z: " << Omagn.z
+                  << " uT" << std::endl;
+        std::cout << "G |"
+                  << " X: " << Ogyro.x
+                  << " Y: " << Ogyro.y
+                  << " Z: " << Ogyro.z
+                  << " dps" << std::endl;
+        std::cout << "A |"
+                  << " X: " << Oaccel.x
+                  << " Y: " << Oaccel.y
+                  << " Z: " << Oaccel.z
+                  << " m/s^2"
+                  << "\n"
+                  << std::endl;
     }
 }
 

@@ -9,6 +9,8 @@
  * 
  */
 
+#include <hardware/i2c.h>
+
 #define PIN_UART0_TX 0
 #define PIN_UART0_RX 1
 
@@ -17,8 +19,9 @@
 #define PIN_MOTOR_LA 10
 #define PIN_MOTOR_LB 11
 
-#define PIN_SDA 6
-#define PIN_SCL 7
+#define PIN_SDA 4
+#define PIN_SCL 5
+#define I2C_INST i2c0
 
 #define PIN_IMU_INT1 8
 #define PIN_IMU_INT2 9
