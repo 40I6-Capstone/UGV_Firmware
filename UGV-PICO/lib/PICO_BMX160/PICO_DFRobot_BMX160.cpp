@@ -41,7 +41,7 @@ bool DFRobot_BMX160::begin()
 {
 
     // _pWire->begin();
-    i2c_init(_pWire, 10 * 1000);
+    i2c_init(_pWire, 100 * 1000);
     gpio_set_function(_sda, GPIO_FUNC_I2C);
     gpio_set_function(_scl, GPIO_FUNC_I2C);
     // gpio_pull_up(_sda);

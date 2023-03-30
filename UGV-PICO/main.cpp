@@ -23,7 +23,8 @@
 
 #include "lib/MotorControl.hpp"
 #include "lib/QuadEncoder.hpp"
-#include "lib/PICO_BMX160/PICO_DFRobot_BMX160.h"
+// #include "lib/PICO_BMX160/PICO_DFRobot_BMX160.h"
+#include "lib/PICO_BMX160/PICO_IMU.hpp"
 
 // #define TEST_UART
 
@@ -34,7 +35,7 @@ MotorControl *motor_left;
 QuadEncoder *enc_right;
 QuadEncoder *enc_left;
 
-DFRobot_BMX160 *imu;
+PICO_IMU *imu;
 
 void gpio_isr(uint gpio, uint32_t events)
 {
@@ -95,7 +96,7 @@ void core0_main()
 
     gpio_set_irq_enabled_with_callback(PIN_ENC_RA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
-    imu = new DFRobot_BMX160(I2C_INST, PIN_SDA, PIN_SCL);
+    imu = new PICO_IMU(I2C_INST, PIN_SDA, PIN_SCL);
     bool imuSetupSuccess;
     imuSetupSuccess = imu->begin();
     std::cout << (imuSetupSuccess ? "Setup Success" : "Setup Fail") << std::endl;
@@ -122,26 +123,28 @@ void core0_main()
         //           << ",RightV:"
         //           << enc_right->getVelocity() << std::endl;
 
-        sBmx160SensorData_t Omagn, Ogyro, Oaccel;
+        // sBmx160SensorData_t Omagn, Ogyro, Oaccel;
 
-        imu->getAllData(&Omagn, &Ogyro, &Oaccel);
-        std::cout << "M |"
-                  << " X: " << Omagn.x
-                  << " Y: " << Omagn.y
-                  << " Z: " << Omagn.z
-                  << " uT" << std::endl;
-        std::cout << "G |"
-                  << " X: " << Ogyro.x
-                  << " Y: " << Ogyro.y
-                  << " Z: " << Ogyro.z
-                  << " dps" << std::endl;
-        std::cout << "A |"
-                  << " X: " << Oaccel.x
-                  << " Y: " << Oaccel.y
-                  << " Z: " << Oaccel.z
-                  << " m/s^2"
-                  << "\n"
-                  << std::endl;
+        // imu->getAllData(&Omagn, &Ogyro, &Oaccel);
+        // std::cout << "M |"
+        //           << " X: " << Omagn.x
+        //           << " Y: " << Omagn.y
+        //           << " Z: " << Omagn.z
+        //           << " uT" << std::endl;
+        // std::cout << "G |"
+        //           << " X: " << Ogyro.x
+        //           << " Y: " << Ogyro.y
+        //           << " Z: " << Ogyro.z
+        //           << " dps" << std::endl;
+        // std::cout << "A |"
+        //           << " X: " << Oaccel.x
+        //           << " Y: " << Oaccel.y
+        //           << " Z: " << Oaccel.z
+        //           << " m/s^2"
+        //           << "\n"
+        //           << std::endl;
+        // std::cout << std::sqrt(Omagn.x * Omagn.x + Omagn.y * Omagn.y + Omagn.z * Omagn.z) << std::endl;
+        std::cout << imu->getAngle() << std::endl;
     }
 }
 
