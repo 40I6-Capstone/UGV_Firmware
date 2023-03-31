@@ -1,0 +1,3 @@
+add_library(pid_controller PIDController.hpp PIDController.cpp)
+
+target_link_libraries(pid_controller)

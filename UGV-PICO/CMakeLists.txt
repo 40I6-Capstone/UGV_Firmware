@@ -9,14 +9,19 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Initialize the SDK
 pico_sdk_init()
+
 add_subdirectory(lib/PICO_BMX160)
+add_subdirectory(lib/PIDController)
+add_subdirectory(lib/DiffDriveOdom)
 
 add_executable(ugv_firm
 	main.cpp
 	)
 
+
+
 # Pull in our pico_stdlib which pulls in commonl
-target_link_libraries(ugv_firm pico_stdlib pico_multicore pico_stdio_usb hardware_uart hardware_irq hardware_i2c hardware_pwm hardware_gpio pico_time pico_bmx160)
+target_link_libraries(ugv_firm pico_stdlib pico_multicore pico_stdio_usb hardware_uart hardware_irq hardware_i2c hardware_pwm hardware_gpio pico_time pico_bmx160 pid_controller diff_drive_odom)
 
 # Enable/Disable usb/uart standard output (1 for enable, 0 for disable)
 # Serial default baud: 115200
