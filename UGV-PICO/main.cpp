@@ -14,7 +14,6 @@
 #include <pico/stdio_usb.h>
 #include <pico/time.h>
 
-#include <math.h>
 #include <iostream>
 
 #include "lib/PICO_UARTManager.hpp"

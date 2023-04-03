@@ -1,5 +1,5 @@
 #include "PICO_DFRobot_BMX160.h"
-#include "math.h"
+#include <cmath>
 
 class PICO_IMU
 {
