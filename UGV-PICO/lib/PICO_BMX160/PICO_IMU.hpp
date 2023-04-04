@@ -1,5 +1,8 @@
 #include "PICO_DFRobot_BMX160.h"
 #include <cmath>
+#include "../MemoryFilter/MedianFilt/MedianFilt.hpp"
+
+#define FILT_SIZE 10
 
 class PICO_IMU
 {
@@ -10,6 +13,7 @@ private:
     struct repeating_timer updateTimer;
     bool inverted;
     uint64_t lastTimeStamp;
+    MedianFilt<double, FILT_SIZE> *filt;
 
 public:
     PICO_IMU(i2c_inst_t *i2c, uint sda, uint scl);
@@ -23,9 +27,10 @@ public:
 PICO_IMU::PICO_IMU(i2c_inst_t *i2c, uint sda, uint scl)
 {
     this->angle = 0;
-    this->staticDeadband = 0.124;
+    this->staticDeadband = 0.2;
     this->imu = new DFRobot_BMX160(i2c, sda, scl);
     this->inverted = false;
+    this->filt = new MedianFilt<double, FILT_SIZE>();
 }
 
 /**
@@ -53,7 +58,9 @@ bool PICO_IMU::begin()
 
 double PICO_IMU::getAngle()
 {
-    return this->angle;
+    double output;
+    output = fmod(this->angle, 360.);
+    return output;
 }
 
 void PICO_IMU::setInverted(bool isInverted)
@@ -76,11 +83,12 @@ void PICO_IMU::update()
     sBmx160SensorData_t gyroData;
     this->imu->getAllData(NULL, &gyroData, NULL);
     // std::cout << gyroData.z << std::endl;
-
-    if (std::abs(gyroData.z) > this->staticDeadband)
+    this->filt->update(gyroData.z);
+    double filteredTheta = this->filt->getOutput();
+    if (std::abs(filteredTheta) > this->staticDeadband)
     {
-        double dt = double(time_us_64() - this->lastTimeStamp) / 1E6;     // us to seconds
-        double dTheta = ((gyroData.z-this->staticDeadband) * (this->inverted ? -1. : 1.)); // gradian/s to deg/s
+        double dt = double(time_us_64() - this->lastTimeStamp) / 1E6;                           // us to seconds
+        double dTheta = ((filteredTheta - this->staticDeadband) * (this->inverted ? -1. : 1.)); // gradian/s to deg/s
         this->angle = (this->angle + dTheta * dt);
         this->lastTimeStamp = time_us_64();
     }

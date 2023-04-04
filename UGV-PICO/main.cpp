@@ -15,15 +15,24 @@
 #include <pico/time.h>
 
 #include <iostream>
+#include <cmath>
 
-#include "lib/PICO_UARTManager.hpp"
 #include "lib/hw_defines.h"
+#include "lib/number_constants.h"
 #include "../common_lib/network_defines.h"
 
+#include "lib/PICO_UARTManager.hpp"
 #include "lib/MotorControl.hpp"
 #include "lib/QuadEncoder.hpp"
 // #include "lib/PICO_BMX160/PICO_DFRobot_BMX160.h"
 #include "lib/PICO_BMX160/PICO_IMU.hpp"
+#include "lib/DiffDriveOdom/DifferentialDriveOdometry.hpp"
+
+#define LOOP_TIME_US 20*1E3
+
+#define DEG_TO_RAD(deg) (deg*M_PI/180.)
+#define RAD_TO_DEG(rad) (rad*180./M_PI)
+
 
 // #define TEST_UART
 
@@ -35,6 +44,9 @@ QuadEncoder *enc_right;
 QuadEncoder *enc_left;
 
 PICO_IMU *imu;
+
+DifferentialDriveOdometry *odom;
+
 
 void gpio_isr(uint gpio, uint32_t events)
 {
@@ -92,6 +104,9 @@ void core0_main()
     enc_left = new QuadEncoder(PIN_ENC_LA, PIN_ENC_LB);
     enc_right->setInverted(false);
     enc_left->setInverted(false);
+    enc_right->setConversionFactor(M_PER_REV);
+    enc_left->setConversionFactor(M_PER_REV);
+
 
     gpio_set_irq_enabled_with_callback(PIN_ENC_RA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
@@ -100,9 +115,28 @@ void core0_main()
     imuSetupSuccess = imu->begin();
     std::cout << (imuSetupSuccess ? "Setup Success" : "Setup Fail") << std::endl;
     sleep_ms(100);
+    imu->update();
 
+    odom = new DifferentialDriveOdometry(DEG_TO_RAD(imu->getAngle()));
+
+
+    uint64_t lastLoopTs = time_us_64();
     while (1)
     {
+        if(time_us_64()-lastLoopTs > LOOP_TIME_US){
+
+        odom->update(enc_right->getPosition(),enc_left->getPosition(),DEG_TO_RAD(imu->getAngle()));
+        std::cout << "Gyro: " << imu->getAngle() << std::endl;
+        std::cout << "EncR: " << enc_right->getPosition() << " EncL: " << enc_left->getPosition() << std::endl;
+        DifferentialDriveOdometry::Pose currentPose = odom->getCurrentPose();
+        std::cout << "Pose: " << currentPose.x << " " << currentPose.y << " " << RAD_TO_DEG(currentPose.theta) << " " << std::endl; 
+
+            // Reset timer
+            lastLoopTs = time_us_64();
+        }
+        else{
+            tight_loop_contents();
+        }
         // printf("Core0 Ping\n");
         // int left;
         // int right;
@@ -143,7 +177,6 @@ void core0_main()
         //           << "\n"
         //           << std::endl;
         // std::cout << std::sqrt(Omagn.x * Omagn.x + Omagn.y * Omagn.y + Omagn.z * Omagn.z) << std::endl;
-        std::cout << imu->getAngle() << std::endl;
     }
 }
 
