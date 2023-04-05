@@ -15,6 +15,8 @@
 #include <memory.h>
 #include <stdint.h>
 
+#define PACKET_MAX_SIZE 256
+
 /**
  * @brief packet codes, usually sent ahead of the packet itself
  * 
@@ -49,7 +51,7 @@ typedef enum
  */
 typedef struct
 {
-    char code = PACKET_NODE_STATE;
+    char code;
     double x;         // x position
     double y;         // y position
     double v;         // Linear velocity
@@ -68,7 +70,7 @@ typedef struct
  */
 typedef struct
 {
-    char code = PACKET_PATH;
+    char code;
     double x;       // x position
     double y;       // y position
 } packet_path_point;
@@ -76,7 +78,7 @@ typedef struct
 
 typedef struct 
 {
-    char code = PACKET_DIAG_STATE;
+    char code;
     uint64_t ts_ms; // Timestamp in ms
     double v_right; // current velocity of the right motor
     double d_right; // cumulative distance the right motor has traveled since time 0
