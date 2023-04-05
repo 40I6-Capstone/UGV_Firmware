@@ -19,7 +19,7 @@
 
 #include "lib/hw_defines.h"
 #include "lib/number_constants.h"
-#include "../common_lib/network_defines.h"
+// #include "../common_lib/network_defines.hpp"
 
 #include "lib/PICO_UARTManager.hpp"
 #include "lib/MotorControl.hpp"
@@ -28,7 +28,7 @@
 #include "lib/PICO_BMX160/PICO_IMU.hpp"
 #include "lib/DiffDriveOdom/DifferentialDriveOdometry.hpp"
 
-#define LOOP_TIME_US 20*1E3
+#define LOOP_TIME_US 1000*1E3 //20*1E3
 
 #define DEG_TO_RAD(deg) (deg*M_PI/180.)
 #define RAD_TO_DEG(rad) (rad*180./M_PI)
@@ -65,30 +65,42 @@ void core1_main()
 {
 
     // Initalize uart manager
-    // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200, []()
-    //                            { uart_man->int_handler(); });
+    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200,
+                                []()
+                                {
+                                    printf("Flush Data:\n");
+                                    char buff[uart_man->flushIndex];
+                                    uart_man->load(buff,uart_man->flushIndex);
+                                    puts(buff);
+                                    printf("\n");
+                                });
 
-    // uart_man->subscribe([]()
-    //                     {
-    //                             packet_path_point pack;
-    //                             uart_man->load(&pack, sizeof(pack));
-    //                             std::cout << "x: " << pack.x << std::endl;
-    //                             std::cout << "y: " << pack.y << std::endl;
-    //                             std::cout << "v: " << pack.v << std::endl;
-    //                             std::cout << "theta: " << pack.theta << std::endl;
-    //                             std::cout << "ts_ms: " << pack.ts_ms << std::endl; },
-    //                     PACKET_PATH);
+    uart_man->subscribe([]()
+                        {
+                                packet_path_point pack;
+                                uart_man->load(&pack, sizeof(pack));
+                                std::cout << "x: " << pack.x << std::endl;
+                                std::cout << "y: " << pack.y << std::endl;
+                        },
+                        PACKET_PATH);
 
+
+        
+
+    static uint64_t ts = time_us_64();
     while (1)
     {
-        // printf("Core1 Ping\n");
         // tight_loop_contents();
-        // sleep_ms(100);
-        // uart_man->loop();
-        gpio_put(PICO_DEFAULT_LED_PIN, 1);
-        sleep_ms(500);
-        gpio_put(PICO_DEFAULT_LED_PIN, 0);
-        sleep_ms(500);
+        uart_man->loop();
+        // sleep_ms(50);
+        if(time_us_64()-ts > 500*1E3){
+            printf("Core1 Ping\n");
+            gpio_put(PICO_DEFAULT_LED_PIN, !gpio_get_out_level(PICO_DEFAULT_LED_PIN));
+            ts = time_us_64();
+        }
+        // sleep_ms(500);
+        // gpio_put(PICO_DEFAULT_LED_PIN, 0);
+        // sleep_ms(500);
     }
 }
 
@@ -126,10 +138,10 @@ void core0_main()
         if(time_us_64()-lastLoopTs > LOOP_TIME_US){
 
         odom->update(enc_right->getPosition(),enc_left->getPosition(),DEG_TO_RAD(imu->getAngle()));
-        std::cout << "Gyro: " << imu->getAngle() << std::endl;
-        std::cout << "EncR: " << enc_right->getPosition() << " EncL: " << enc_left->getPosition() << std::endl;
+        // std::cout << "Gyro: " << imu->getAngle() << std::endl;
+        // std::cout << "EncR: " << enc_right->getPosition() << " EncL: " << enc_left->getPosition() << std::endl;
         DifferentialDriveOdometry::Pose currentPose = odom->getCurrentPose();
-        std::cout << "Pose: " << currentPose.x << " " << currentPose.y << " " << RAD_TO_DEG(currentPose.theta) << " " << std::endl; 
+        // std::cout << "Pose: " << currentPose.x << " " << currentPose.y << " " << RAD_TO_DEG(currentPose.theta) << " " << std::endl; 
 
             // Reset timer
             lastLoopTs = time_us_64();

@@ -15,6 +15,8 @@
 #include <memory.h>
 #include <stdint.h>
 
+#define PACKET_MAX_SIZE 256
+
 /**
  * @brief packet codes, usually sent ahead of the packet itself
  * 
