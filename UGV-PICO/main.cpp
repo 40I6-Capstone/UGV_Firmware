@@ -19,11 +19,18 @@
 #include <iostream>
 #include <cmath>
 
+// #include "lib/hw_defines.h"
+// include "lib/number_constants.h"
+#include "../common_lib/network_defines.h"
 #include "lib/hw_defines.h"
 #include "lib/number_constants.h"
 // #include "../common_lib/network_defines.hpp"
 
 #include "lib/PICO_UARTManager.hpp"
+#include "lib/DiffDriveBase/DifferentialDrive.hpp"
+
+// #include "lib/MotorControl.hpp"
+// #include "lib/QuadEncoder.hpp"
 #include "lib/DiffDriveBase/DifferentialDrive.hpp"
 
 // #include "lib/MotorControl.hpp"
@@ -38,6 +45,7 @@
 
 UARTManager *uart_man;
 
+DifferentialDrive *drive;
 DifferentialDrive *drive;
 
 void gpio_isr(uint gpio, uint32_t events)
@@ -63,27 +71,20 @@ void core1_main()
 {
 
     // Initalize uart manager
-    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200,
-                                []()
-                                {
-                                    printf("Flush Data:\n");
-                                    char buff[uart_man->flushIndex];
-                                    uart_man->load(buff,uart_man->flushIndex);
-                                    puts(buff);
-                                    printf("\n");
-                                });
+    // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200, []()
+    //                            { uart_man->int_handler(); });
 
-    uart_man->subscribe([]()
-                        {
-                                packet_path_point pack;
-                                uart_man->load(&pack, sizeof(pack));
-                                std::cout << "x: " << pack.x << std::endl;
-                                std::cout << "y: " << pack.y << std::endl;
-                        },
-                        PACKET_PATH);
+    // uart_man->subscribe([]()
+    //                     {
+    //                             packet_path_point pack;
+    //                             uart_man->load(&pack, sizeof(pack));
+    //                             std::cout << "x: " << pack.x << std::endl;
+    //                             std::cout << "y: " << pack.y << std::endl;
+    //                             std::cout << "v: " << pack.v << std::endl;
+    //                             std::cout << "theta: " << pack.theta << std::endl;
+    //                             std::cout << "ts_ms: " << pack.ts_ms << std::endl; },
+    //                     PACKET_PATH);
 
-
-        
 
     static uint64_t ledTs = time_us_64();
     while (1)
@@ -94,6 +95,8 @@ void core1_main()
         }
     }
 }
+
+
 
 // Main function to execute on core 0 (primary core, interfaces with hardware)
 void core0_main()
