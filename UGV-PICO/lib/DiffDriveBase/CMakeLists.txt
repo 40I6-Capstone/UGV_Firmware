@@ -1,0 +1,9 @@
+
+add_subdirectory(DiffDriveOdom)
+add_subdirectory(PIDController)
+add_subdirectory(PICO_BMX160)
+
+add_library(diff_drive DifferentialDrive.hpp DifferentialDrive.cpp)
+
+
+target_link_libraries(diff_drive diff_drive_odom pico_bmx160 pid_controller hardware_pwm hardware_gpio pico_stdlib)
