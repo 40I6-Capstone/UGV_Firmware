@@ -21,13 +21,13 @@
  */
 typedef enum
 {
-    WHO_AM_I,
-    NODE_STATE,
-    PATH,
-    STOP,
-    GO,
-    DIAG_STATE,
-    ESP_STATUS
+    PACKET_WHO_AM_I,
+    PACKET_NODE_STATE,
+    PACKET_PATH,
+    PACKET_STOP,
+    PACKET_GO,
+    PACKET_DIAG_STATE,
+    PACKET_ESP_STATUS
 } packet_code;
 
 /**
@@ -48,7 +48,7 @@ typedef enum
  */
 typedef struct
 {
-    char code;
+    char code = PACKET_NODE_STATE;
     double x;         // x position
     double y;         // y position
     double v;         // Linear velocity
@@ -67,7 +67,7 @@ typedef struct
  */
 typedef struct
 {
-    char code;
+    char code = PACKET_PATH;
     double x;       // x position
     double y;       // y position
 } packet_path_point;
@@ -75,7 +75,7 @@ typedef struct
 
 typedef struct 
 {
-    char code;
+    char code = PACKET_DIAG_STATE;
     uint64_t ts_ms; // Timestamp in ms
     double v_right; // current velocity of the right motor
     double d_right; // cumulative distance the right motor has traveled since time 0
