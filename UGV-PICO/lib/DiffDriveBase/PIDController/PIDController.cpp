@@ -8,6 +8,7 @@ PIDController::PIDController(double (*getSysTime)())
     this->kP = 0;
     this->kI = 0;
     this->kD = 0;
+    this->kF = 0;
     this->threshold = 0;
     this->output = 0;
     this->setpoint = 0;
@@ -21,7 +22,9 @@ void PIDController::setGains(double kP, double kI, double kD)
     this->kP = kP;
     this->kI = kI;
     this->kD = kD;
+    reset();
 }
+
 
 double PIDController::calculate(double measurement)
 {
@@ -30,6 +33,7 @@ double PIDController::calculate(double measurement)
 
 double PIDController::calculate(double setpoint, double measurement)
 {
+
     this->err = setpoint - measurement;
     this->errSum += this->err;
 
@@ -41,7 +45,9 @@ double PIDController::calculate(double setpoint, double measurement)
     this->lastTs = this->getSysTime();
     this->lastErr = this->err;
 
-    return P + I + D;
+    this->output = P + I + D;
+
+    return this->output;
 }
 
 void PIDController::setSetpoint(double setpoint)
