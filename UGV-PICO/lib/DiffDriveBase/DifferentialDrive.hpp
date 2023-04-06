@@ -82,7 +82,7 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
     this->imu = new PICO_IMU(I2C_INST, PIN_SDA, PIN_SCL);
     bool imuSetupSuccess;
     imuSetupSuccess = imu->begin();
-    std::cout << (imuSetupSuccess ? "Setup Success" : "Setup Fail") << std::endl;
+    // std::cout << (imuSetupSuccess ? "Setup Success" : "Setup Fail") << std::endl;
     sleep_ms(100);
     imu->update();
 

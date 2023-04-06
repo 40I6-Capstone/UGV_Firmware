@@ -9,11 +9,13 @@
  * @copyright Copyright (c) 2022
  * 
  */
-
+#pragma once
 
 #include <stdlib.h>
 #include <memory.h>
 #include <stdint.h>
+
+#define PACKET_MAX_SIZE 40
 
 /**
  * @brief packet codes, usually sent ahead of the packet itself
@@ -54,7 +56,6 @@ typedef struct
     double y;         // y position
     double v;         // Linear velocity
     double theta;     // Heading
-    uint64_t ts_ms;   // Timestamp in ms
     node_state state; // Current executing state of the node
     double x_exp;     // expected x position relative to the start based on path
     double y_exp;     // expected y position relative to the start based on path
@@ -77,7 +78,6 @@ typedef struct
 typedef struct 
 {
     char code;
-    uint64_t ts_ms; // Timestamp in ms
     double v_right; // current velocity of the right motor
     double d_right; // cumulative distance the right motor has traveled since time 0
     double v_left; // current velocity of the left motor

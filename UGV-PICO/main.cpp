@@ -24,7 +24,9 @@
 // #include "../UGV-ESP/UGV-ESP/network_defines.hpp"
 
 #include "lib/PICO_UARTManager.hpp"
+// #include "lib/UART_Subscribers.hpp"
 #include "lib/DiffDriveBase/DifferentialDrive.hpp"
+#include "lib/PathLoader.hpp"
 
 
 #define LOOP_TIME_US 20*1E3
@@ -33,6 +35,8 @@
 UARTManager *uart_man;
 
 DifferentialDrive *drive;
+
+PathLoader *pathLoader;
 
 void gpio_isr(uint gpio, uint32_t events)
 {
@@ -48,39 +52,58 @@ double getSysTime()
 }
 
 
+
+
+void pathSubscriber(void *data, size_t length, packet_code code){
+    packet_path_point *pathPoint = (packet_path_point*)data;
+
+    pathLoader->load(*pathPoint);
+
+    // for(int i = 0; i< PATH_MAX_POINTS; i++){
+    //     packet_path_point tp = pathLoader->getActivePath()[i];
+    //     std::cout << "code: " << (int)(tp.code) << std::endl;
+    //     std::cout << "x: " << tp.x << std::endl;
+    //     std::cout << "y: " << tp.y << std::endl;
+    // }
+    //     std::cout << "--------" << std::endl;
+
+}
+
+
+
+
+
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
 {
 
     // Initalize uart manager
-    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200,
-                                []()
-                                {
-                                    printf("Flush Data:\n");
-                                    char buff[uart_man->flushIndex];
-                                    uart_man->load(buff,uart_man->flushIndex);
-                                    puts(buff);
-                                    printf("\n");
-                                });
+    // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200,
+    //                             []()
+    //                             {
+    //                                 printf("Flushing %d bytes ", uart_man->flushCount);
+    //                                 for(int i = 0; i < uart_man->flushCount; i++){
+    //                                     printf(" %d ", uart_man->buff[i]);
+    //                                 }
+    //                                 printf("\n");
+    //                             });
 
-    // uart_man->subscribe([]()
-    //                     {
-    //                             packet_path_point pack;
-    //                             uart_man->load(&pack, sizeof(pack));
-    //                             std::cout << "x: " << pack.x << std::endl;
-    //                             std::cout << "y: " << pack.y << std::endl;
-    //                     },
-    //                     PACKET_PATH);
+    pathLoader = new PathLoader();
+    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
 
+    uart_man->subscribe(pathSubscriber,PACKET_PATH);
 
-        
 
     static uint64_t ledTs = time_us_64();
+    static bool pinState = false;
     while (1)
     {
+        uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
         {
-            gpio_put(PICO_DEFAULT_LED_PIN, !gpio_get_out_level(PICO_DEFAULT_LED_PIN));
+            gpio_put(PICO_DEFAULT_LED_PIN, pinState);
+            pinState = !pinState;
+            ledTs = time_us_64();
         }
     }
 }
