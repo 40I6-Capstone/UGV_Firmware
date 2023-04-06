@@ -68,7 +68,7 @@ QuadEncoder::QuadEncoder(uint pinA, uint pinB)
     this->oldPosition = 0;
     this->oldTimestamp = time_us_64();
     add_repeating_timer_ms(
-        -50, [](struct repeating_timer *t) -> bool
+        -100, [](struct repeating_timer *t) -> bool
         {
             QuadEncoder *enc = (QuadEncoder*)(t->user_data);
             enc->updateVelocity();

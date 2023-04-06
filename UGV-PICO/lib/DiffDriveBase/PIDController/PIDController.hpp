@@ -7,7 +7,7 @@ private:
     double lastErr;
     double errSum;
 
-    double kP, kI, kD;
+    double kP, kI, kD,kF;
     double (*getSysTime)();
     double lastTs;
 
