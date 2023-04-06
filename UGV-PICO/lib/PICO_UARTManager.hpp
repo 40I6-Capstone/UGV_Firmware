@@ -14,32 +14,38 @@
 #include <vector>
 #include <stdint.h>
 #include <pico/stdlib.h>
-#include "hardware/uart.h"
-#include "hardware/irq.h"
+#include <hardware/uart.h>
+#include <hardware/irq.h>
 // #include "../../common_lib/network_defines.hpp"
 #include "../../UGV-ESP/UGV-ESP/network_defines.hpp"
 
 #define UART uart0
 #define UART_IRQ UART0_IRQ
 
+
+
 class UARTManager
 {
-private:
-    char buff[PACKET_MAX_SIZE];
-    volatile bool parsed;
-    volatile packet_code parsed_packet_code;
-    std::vector<void (*)()> subscribers[PACKET_TYPES_COUNT];
-    void (*flushFunc)();
-
 public:
-    UARTManager(uint tx, uint rx, uint baud, void(*flushFunc)());
+    // UARTManager(uint tx, uint rx, uint baud, void(*flushFunc)());
+    UARTManager(uint tx, uint rx, uint baud);
+    char buff[256];
     void loop();
     void load(void *dst, size_t size);
     void send(void *src, size_t size);
-    void subscribe(void (*func)(), packet_code code);
-    void subscribe(void (*func)());
+    typedef void (*subscriber)(void* data, size_t length,packet_code code);
+    void subscribe(subscriber subFunc, packet_code code);
+    void subscribe(subscriber subFunc);
     void handleData();
-    volatile uint16_t flushIndex;
+    int flushCount;
+
+private:
+    bool parsed;
+    packet_code parsed_packet_code;
+    size_t parsed_packet_size;
+    std::vector<subscriber> subscribers[PACKET_TYPES_COUNT];
+    void (*flushFunc)();
+    bool checkCodeValid(packet_code code);
 };
 
 /**
@@ -51,7 +57,8 @@ public:
  * @param irq Pointer to function that will run when uart interrupt is triggered,
  * create a function of type irq_handler_t and call uartmanager->int-handler()
  */
-UARTManager::UARTManager(uint tx, uint rx, uint baud, void(*flushFunc)())
+// UARTManager::UARTManager(uint tx, uint rx, uint baud, void(*flushFunc)())
+UARTManager::UARTManager(uint tx, uint rx, uint baud)
 {
     // Initial member states
     this->parsed = false;
@@ -68,22 +75,39 @@ UARTManager::UARTManager(uint tx, uint rx, uint baud, void(*flushFunc)())
     // irq_set_enabled(UART_IRQ, true);
     // uart_set_irq_enables(UART, true, false);
 
-    this->flushIndex = 0;
-    this->flushFunc = flushFunc;
+    // this->flushCount = 0;
+    // this->flushFunc = flushFunc;
+
+}
+
+
+bool UARTManager::checkCodeValid(packet_code code){
+    switch (code)
+    {
+        case PACKET_NODE_STATE:
+        case PACKET_PATH:
+        case PACKET_GO:
+        case PACKET_STOP:
+        case PACKET_DIAG_STATE:
+            return true;
+    
+        default:
+            return false;
+    }
 }
 
 void UARTManager::handleData()
 {
     typedef enum
     {
-        FLUSH, // Flushing out the buffer
-        IDLE,    // Waiting for first byte in packet
+        IDLE,// Waiting for first byte in packet
+        // PREP_PARSE,   // Enabling Parsing
         PARSING, // Parsing bytes untill enough for packet struct
     } uart_state;
     static uart_state state = IDLE;
 
     static packet_code packet;   // Code of the current packet being parsed from UART
-    static uint8_t packet_size;  // Size of the packet to be saved
+    static size_t packet_size;  // Size of the packet to be saved
     static uint8_t rx_count = 0; // Count of the bytes read
 
     // Run the state machine for however many bytes are available
@@ -93,12 +117,19 @@ void UARTManager::handleData()
         {
         // Waiting for a packet code byte
         case IDLE:
-            if(!this->parsed){
-                packet = (packet_code)uart_getc(UART); // First byte, set the code to determine how the rest are parsed
+            packet = (packet_code)uart_getc(UART); // First byte, set the code to determine how the rest are parsed
+            if(checkCodeValid(packet)){
                 state = PARSING;                       // Set state to parsing
-                rx_count = 0;                          // Reset rx count
+                rx_count = 1;                          // Reset rx count
+                buff[0] = packet;
+            } else { // Flush
+            std::cout << "flushing..." << int(packet) << std::endl;
+            //     flushCount = 1;
+            //     this->buff[0] = start;    
+            //     this->flushFunc();
+            //     flushCount = 0;
             }
-            break;
+        break;
 
         // Parsing bytes as they come in until the relevant struct is full
         case PARSING:
@@ -122,36 +153,25 @@ void UARTManager::handleData()
                 packet_size = sizeof(diagnostic_node_state);
                 break;
 
-            default:
-                packet_size = 0;
-                state = FLUSH;
+            default: // Flush
+                packet_size = -1;
+                state = IDLE;
                 break;
             }
             if(packet_size > 0){
-
                 // Update buffer
                 this->buff[rx_count++] = uart_getc(UART);
 
                 // If enough is read to save to a struct, reset state and raise flag
-                if (rx_count > packet_size)
+                if (rx_count >= packet_size)
                 {
                     state = IDLE;
                     this->parsed = true;
+                    this->parsed_packet_size = packet_size;
                     this->parsed_packet_code = packet;
                 }
             }
             break;
-
-        case FLUSH:
-            flushIndex = 0;
-            this->buff[0] = parsed_packet_code;
-            while (uart_is_readable(UART)){
-                this->buff[++flushIndex] = uart_getc(UART);
-            }
-            state = IDLE;
-            this->parsed = true;
-            break;
-
         }
     }
 }
@@ -165,18 +185,12 @@ void UARTManager::loop()
     handleData();
     if (this->parsed)
     {
-        if(this->flushIndex > 0)
-        {
-            this->flushFunc();
-            this->flushIndex = 0;
-        }
-        else 
-        {
             for (size_t i = 0; i < subscribers[parsed_packet_code].size(); i++)
             {
-                subscribers[parsed_packet_code][i]();
+                void* data = malloc(this->parsed_packet_size);
+                load(data,this->parsed_packet_size);
+                subscribers[parsed_packet_code][i](data, this->parsed_packet_size,this->parsed_packet_code);
             }
-        }
         this->parsed = false;
     }
 }
@@ -187,9 +201,9 @@ void UARTManager::loop()
  * @param func pointer to function to be run
  * @param code the type of packet, when recieved to subscribe to
  */
-void UARTManager::subscribe(void (*func)(), packet_code code)
+void UARTManager::subscribe(subscriber subFunc, packet_code code)
 {
-    this->subscribers[code].push_back(func);
+    this->subscribers[code].push_back(subFunc);
 }
 
 /**
@@ -202,6 +216,7 @@ void UARTManager::load(void *dst, size_t size)
 {
     packet_from_buff(dst, this->buff, size);
 }
+
 
 /**
  * @brief Send struct over uart, blocking

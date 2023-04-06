@@ -9,11 +9,13 @@
  * @copyright Copyright (c) 2022
  * 
  */
-
+#pragma once
 
 #include <stdlib.h>
 #include <memory.h>
 #include <stdint.h>
+
+#define PACKET_MAX_SIZE 40
 
 /**
  * @brief packet codes, usually sent ahead of the packet itself
@@ -54,7 +56,6 @@ typedef struct
     double y;         // y position
     double v;         // Linear velocity
     double theta;     // Heading
-    uint64_t ts_ms;   // Timestamp in ms
     node_state state; // Current executing state of the node
     double x_exp;     // expected x position relative to the start based on path
     double y_exp;     // expected y position relative to the start based on path
