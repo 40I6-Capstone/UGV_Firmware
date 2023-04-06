@@ -15,6 +15,8 @@
 #include <pico/time.h>
 #include <stdlib.h>
 #include <string>
+#include <stdlib.h>
+#include <string>
 
 #include <iostream>
 #include <cmath>
@@ -85,7 +87,6 @@ void core1_main()
     //                             std::cout << "ts_ms: " << pack.ts_ms << std::endl; },
     //                     PACKET_PATH);
 
-
     static uint64_t ledTs = time_us_64();
     while (1)
     {
@@ -95,8 +96,6 @@ void core1_main()
         }
     }
 }
-
-
 
 // Main function to execute on core 0 (primary core, interfaces with hardware)
 void core0_main()
