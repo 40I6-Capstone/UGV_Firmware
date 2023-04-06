@@ -13,6 +13,8 @@
 #include <pico/multicore.h>
 #include <pico/stdio_usb.h>
 #include <pico/time.h>
+#include <stdlib.h>
+#include <string>
 
 #include <iostream>
 #include <cmath>
@@ -54,6 +56,11 @@ void gpio_isr(uint gpio, uint32_t events)
     }
 }
 
+double getSysTime()
+{
+    return double(time_us_64()) / 1E6;
+}
+
 
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
@@ -74,48 +81,37 @@ void core1_main()
     //                             std::cout << "ts_ms: " << pack.ts_ms << std::endl; },
     //                     PACKET_PATH);
 
-
-    static uint64_t ts = time_us_64();
+    static uint64_t ledTs = time_us_64();
     while (1)
     {
-        // tight_loop_contents();
-        uart_man->loop();
-        // sleep_ms(50);
-        if(time_us_64()-ts > 500*1E3){
-            printf("Core1 Ping\n");
+        if (time_us_64() - ledTs > 500 * 1E3)
+        {
             gpio_put(PICO_DEFAULT_LED_PIN, !gpio_get_out_level(PICO_DEFAULT_LED_PIN));
-            ts = time_us_64();
         }
-        // sleep_ms(500);
-        // gpio_put(PICO_DEFAULT_LED_PIN, 0);
-        // sleep_ms(500);
     }
 }
-
-
 
 // Main function to execute on core 0 (primary core, interfaces with hardware)
 void core0_main()
 {
 
-
-
-    drive = new DifferentialDrive();
-    gpio_set_irq_enabled_with_callback(0, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
-
+    drive = new DifferentialDrive(getSysTime);
+    gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
     uint64_t lastLoopTs = time_us_64();
     while (1)
     {
         // Main loop
-        if(time_us_64()-lastLoopTs > LOOP_TIME_US){
+        if (time_us_64() - lastLoopTs > LOOP_TIME_US)
+        {
 
-       
             drive->update();
+
             // Reset timer
             lastLoopTs = time_us_64();
         }
-        else{
+        else
+        {
             tight_loop_contents();
         }
     }
