@@ -16,7 +16,8 @@
 #include <pico/stdlib.h>
 #include "hardware/uart.h"
 #include "hardware/irq.h"
-#include "../../common_lib/network_defines.hpp"
+// #include "../../common_lib/network_defines.hpp"
+#include "../../UGV-ESP/UGV-ESP/network_defines.hpp"
 
 #define UART uart0
 #define UART_IRQ UART0_IRQ

@@ -19,26 +19,16 @@
 #include <iostream>
 #include <cmath>
 
-// #include "lib/hw_defines.h"
-// include "lib/number_constants.h"
-#include "../common_lib/network_defines.h"
-#include "lib/hw_defines.h"
-#include "lib/number_constants.h"
+
 // #include "../common_lib/network_defines.hpp"
+// #include "../UGV-ESP/UGV-ESP/network_defines.hpp"
 
 #include "lib/PICO_UARTManager.hpp"
 #include "lib/DiffDriveBase/DifferentialDrive.hpp"
 
-// #include "lib/MotorControl.hpp"
-// #include "lib/QuadEncoder.hpp"
-// #include "lib/PICO_BMX160/PICO_DFRobot_BMX160.h"
-#include "lib/PICO_BMX160/PICO_IMU.hpp"
-#include "lib/DiffDriveOdom/DifferentialDriveOdometry.hpp"
 
 #define LOOP_TIME_US 20*1E3
 
-
-// #define TEST_UART
 
 UARTManager *uart_man;
 
@@ -47,13 +37,9 @@ DifferentialDrive *drive;
 void gpio_isr(uint gpio, uint32_t events)
 {
     if (gpio == PIN_ENC_RA || gpio == PIN_ENC_RB)
-    {
         drive->updateTicksRight();
-    }
     if (gpio == PIN_ENC_LA || gpio == PIN_ENC_LB)
-    {
         drive->updateTicksLeft();
-    }
 }
 
 double getSysTime()
@@ -77,14 +63,14 @@ void core1_main()
                                     printf("\n");
                                 });
 
-    uart_man->subscribe([]()
-                        {
-                                packet_path_point pack;
-                                uart_man->load(&pack, sizeof(pack));
-                                std::cout << "x: " << pack.x << std::endl;
-                                std::cout << "y: " << pack.y << std::endl;
-                        },
-                        PACKET_PATH);
+    // uart_man->subscribe([]()
+    //                     {
+    //                             packet_path_point pack;
+    //                             uart_man->load(&pack, sizeof(pack));
+    //                             std::cout << "x: " << pack.x << std::endl;
+    //                             std::cout << "y: " << pack.y << std::endl;
+    //                     },
+    //                     PACKET_PATH);
 
 
         
