@@ -33,9 +33,7 @@
 
 
 UARTManager *uart_man;
-
 DifferentialDrive *drive;
-
 PathLoader *pathLoader;
 
 void gpio_isr(uint gpio, uint32_t events)
@@ -46,17 +44,12 @@ void gpio_isr(uint gpio, uint32_t events)
         drive->updateTicksLeft();
 }
 
-double getSysTime()
-{
-    return double(time_us_64()) / 1E6;
-}
-
+double getSysTime(){return double(time_us_64()) / 1E6;}
 
 
 
 void pathSubscriber(void *data, size_t length, packet_code code){
     packet_path_point *pathPoint = (packet_path_point*)data;
-
     pathLoader->load(*pathPoint);
 
     // for(int i = 0; i< PATH_MAX_POINTS; i++){
@@ -69,6 +62,19 @@ void pathSubscriber(void *data, size_t length, packet_code code){
 
 }
 
+void goSubscriber(void *data, size_t length, packet_code code){}   
+void stopSubscriber(void *data, size_t length, packet_code code){}   
+void diagSubscriber(void *data, size_t length, packet_code code){}   
+void stateSubscriber(void *data, size_t length, packet_code code){}   
+
+void setupUARTSubscribers()
+{
+    uart_man->subscribe(pathSubscriber,PACKET_PATH);
+    uart_man->subscribe(goSubscriber,PACKET_GO);
+    uart_man->subscribe(stopSubscriber,PACKET_STOP);
+    uart_man->subscribe(diagSubscriber,PACKET_DIAG_STATE);
+    uart_man->subscribe(stateSubscriber,PACKET_NODE_STATE);
+}
 
 
 
@@ -76,23 +82,12 @@ void pathSubscriber(void *data, size_t length, packet_code code){
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
 {
-
-    // Initalize uart manager
-    // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200,
-    //                             []()
-    //                             {
-    //                                 printf("Flushing %d bytes ", uart_man->flushCount);
-    //                                 for(int i = 0; i < uart_man->flushCount; i++){
-    //                                     printf(" %d ", uart_man->buff[i]);
-    //                                 }
-    //                                 printf("\n");
-    //                             });
-
-    pathLoader = new PathLoader();
+    
+    pathLoader = new PathLoader([](){
+        std::cout << "Buffer Swapped" << std::endl;
+     });
     uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
-
-    uart_man->subscribe(pathSubscriber,PACKET_PATH);
-
+    setupUARTSubscribers();
 
     static uint64_t ledTs = time_us_64();
     static bool pinState = false;
