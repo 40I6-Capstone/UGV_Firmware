@@ -10,21 +10,23 @@ private:
     packet_path_point paths[2][PATH_MAX_POINTS]; // Swap buffer
     int activePathIndex;
     int loadingIndex;
+    void (*swapCallback)();
     
 
 public:
-    PathLoader();
+    PathLoader(void (*swapCallback)());
     void load(packet_path_point point);
     packet_path_point *getActivePath();
 };
 
-PathLoader::PathLoader()
+PathLoader::PathLoader(void (*swapCallback)())
 {
     this->activePathIndex = 0;
     this->loadingIndex = 0;
     for(int i = 0; i < PATH_MAX_POINTS; i++){
         this->getActivePath()[i] = {.code = PACKET_PATH, .x = 0.0, .y = 0.0};
     }
+    this->swapCallback = swapCallback;
 }
 
 packet_path_point *PathLoader::getActivePath()
@@ -52,5 +54,6 @@ void PathLoader::load(packet_path_point point)
 
         loadingIndex = 0;
         this->activePathIndex = (this->activePathIndex + 1) % 2;
+        this->swapCallback();
     }
 }
