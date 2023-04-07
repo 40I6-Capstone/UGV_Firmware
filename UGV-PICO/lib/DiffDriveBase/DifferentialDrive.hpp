@@ -158,12 +158,10 @@ void DifferentialDrive::setRightGains(double kP, double kI, double kD){
 
 
 void DifferentialDrive::setDriveState(double heading, double v){
-    double outputLeft = this->leftPID->calculate(v,this->enc_left->getVelocity());
-    double outputRight = this->rightPID->calculate(v,this->enc_right->getVelocity());
     double bias = this->anglePID->calculate(heading,this->getAngle());
 
-    setRightV(outputRight + bias);
-    setLeftV(outputLeft - bias);
+    setRightV(v + bias);
+    setLeftV(v - bias);
 }
 
 
