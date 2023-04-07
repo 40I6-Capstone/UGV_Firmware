@@ -17,7 +17,6 @@
 #include <string>
 #include <stdlib.h>
 #include <string>
-
 #include <iostream>
 #include <cmath>
 
@@ -30,9 +29,6 @@
 #include "lib/DiffDriveBase/DifferentialDrive.hpp"
 #include "lib/PathLoader.hpp"
 
-// #include "lib/MotorControl.hpp"
-// #include "lib/QuadEncoder.hpp"
-#include "lib/DiffDriveBase/DifferentialDrive.hpp"
 
 
 #define LOOP_TIME_US 20 * 1E3
@@ -117,22 +113,41 @@ void core0_main()
     drive = new DifferentialDrive(getSysTime);
     gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
+    sleep_ms(2000);
     uint64_t lastLoopTs = time_us_64();
+    uint64_t motorLoop = time_us_64();
+    double leftPwr = 0.3;
+    double rightPwr = 0.3;
+    // drive->setLeftV(leftPwr);
+    // drive->setRightV(rightPwr);
     while (1)
     {
+        uint64_t currentTs = time_us_64();
         // Main loop
-        if (time_us_64() - lastLoopTs > LOOP_TIME_US)
+        if (currentTs - lastLoopTs > LOOP_TIME_US)
         {
-
+            drive->setDriveState(0,0.3);
             drive->update();
+            std::cout << "Theta: " << drive->getAngle()
+            << " RightV: " << drive->getVRight() 
+            << " LeftV: " << drive->getVLeft()
+            << std::endl;
 
             // Reset timer
-            lastLoopTs = time_us_64();
+            lastLoopTs = currentTs;
         }
-        else
-        {
+        // if(currentTs - motorLoop > 3000 *1E3){
+        //     drive->setLeftV(leftPwr);
+        //     drive->setRightV(rightPwr);
+
+        //     leftPwr = 0.0;
+        //     rightPwr = 0.0;
+        //     motorLoop = currentTs;
+        // }
+        // else
+        // {
             tight_loop_contents();
-        }
+        // }
     }
 }
 
@@ -144,6 +159,7 @@ int main()
 
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
 
     // Wait until USB is connected before doing anything else
     while (!stdio_usb_connected())

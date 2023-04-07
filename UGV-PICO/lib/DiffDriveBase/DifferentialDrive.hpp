@@ -114,6 +114,7 @@ DifferentialDriveOdometry::Pose DifferentialDrive::getPose(){
     return this->odom->getCurrentPose();
 }
 
+// Returns angle in degs
 double DifferentialDrive::getAngle(){
     return this->imu->getAngle();
 }
