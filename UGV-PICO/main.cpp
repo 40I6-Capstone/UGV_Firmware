@@ -30,6 +30,9 @@
 // #include "lib/UART_Subscribers.hpp"
 #include "lib/DiffDriveBase/DifferentialDrive.hpp"
 #include "lib/PathLoader.hpp"
+#include "lib/ServoControl.hpp"
+// #include "lib/GeometryDefines.hpp"
+#include "lib/PurePursuit.hpp"
 
 
 
@@ -40,8 +43,11 @@
 UARTManager *uart_man;
 DifferentialDrive *drive;
 PathLoader *pathLoader;
+ServoControl *arm;
 
+// MUTEXES
 auto_init_mutex(pwrMtx);
+auto_init_mutex(poseMtx);
 
 void gpio_isr(uint gpio, uint32_t events)
 {
@@ -73,6 +79,13 @@ void goSubscriber(void *data, size_t length, packet_code code){}
 void stopSubscriber(void *data, size_t length, packet_code code){}   
 void diagSubscriber(void *data, size_t length, packet_code code){}   
 void stateSubscriber(void *data, size_t length, packet_code code){}   
+void rebaseSubscriber(void *data, size_t length, packet_code code){
+    packet_rebase *rebasePoint = (packet_rebase*)data;
+    Pose newPose = {.x = packet_}; 
+    mutex_enter_blocking(&poseMtx);
+    drive->setPose(*newPose);
+    mutex_exit(&poseMtx);
+}   
 
 void setupUARTSubscribers()
 {
@@ -81,6 +94,7 @@ void setupUARTSubscribers()
     uart_man->subscribe(stopSubscriber,PACKET_STOP);
     uart_man->subscribe(diagSubscriber,PACKET_DIAG_STATE);
     uart_man->subscribe(stateSubscriber,PACKET_NODE_STATE);
+    uart_man->subscribe(rebaseSubscriber,PACKET_REBASE)
 }
 
 
@@ -132,6 +146,8 @@ void core0_main()
     drive = new DifferentialDrive(getSysTime);
     gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
+    arm = new ServoControl(PIN_SERVO);
+
     sleep_ms(2000);
     uint64_t lastLoopTs = time_us_64();
     uint64_t motorLoop = time_us_64();
@@ -141,7 +157,9 @@ void core0_main()
         uint64_t currentTs = time_us_64();
         if(currentTs - odomTs >10*1E3)
         {
+            mutex_enter_blocking(&poseMtx);
             drive->update();
+            mutex_exit(&poseMtx);
         }
         if (currentTs - lastLoopTs > LOOP_TIME_US)
         {
@@ -162,10 +180,10 @@ void core0_main()
             // Reset timer
             lastLoopTs = currentTs;
         }
-        if(currentTs - motorLoop > 3500 *1E3){
-            // driveSpeed = 0;
-            motorLoop = currentTs;
-        }
+        // if(currentTs - motorLoop > 3500 *1E3){
+        //     // driveSpeed = 0;
+        //     motorLoop = currentTs;
+        // }
 
         // else
         // {
@@ -194,4 +212,55 @@ int main()
     sleep_ms(10);
     multicore_launch_core1(core1_main); // Start up core1
     core0_main();                       // core0 main function
+}
+
+
+
+void robotFSMLoop(){
+    typedef enum {
+        IDLE, // Claw open, waiting to move
+        STOPPED, // Claw closed, waiting to move
+        LEAVING, // Claw closed, moving 
+        RETURNING // Claw closed, moving
+    } robState;
+
+    static robState currentState = IDLE;
+
+    switch(currentState){
+        case IDLE:
+            // Set claw open
+            // arm->write(OPEN_POSITION);
+            // Stop Drive
+            drive->stop();
+
+        break;
+
+        case STOPPED:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+            // Stop Drive
+            drive->stop();
+        break;
+
+        case LEAVING:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+            // Check if heading to last point
+            // Compute lookahead
+            // Compute heading and V
+            // Command drive
+
+        break;
+
+        case RETURNING:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+            // Check if heading to last point
+            // Compute lookahead
+            // Compute heading and V
+            // Command drive
+
+        break;
+    }
+
 }

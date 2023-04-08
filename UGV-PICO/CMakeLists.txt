@@ -15,6 +15,7 @@ pico_sdk_init()
 # add_subdirectory(lib/PIDController)
 # add_subdirectory(lib/DiffDriveOdom)
 add_subdirectory(lib/DiffDriveBase)
+add_subdirectory(lib/GeometryUtils)
 
 add_executable(ugv_firm
 	main.cpp

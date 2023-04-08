@@ -3,18 +3,12 @@
 // #include "~/lib/eigen/Eigen/Dense"
 #include <Eigen/Dense>
 #include <cmath>
+#include "../../GeometryUtils/GeometryUtils.hpp"
 
 
 class DifferentialDriveOdometry
 {
 public:
-    typedef struct
-    {
-        double x;
-        double y;
-        double theta;
-    } Pose;
-
     DifferentialDriveOdometry(double initialAngle, Pose initialPose);
     DifferentialDriveOdometry(double initialAngle);
     Pose getCurrentPose();
