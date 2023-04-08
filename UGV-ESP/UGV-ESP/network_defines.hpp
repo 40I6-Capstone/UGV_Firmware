@@ -27,7 +27,9 @@ typedef enum
     PACKET_STOP,
     PACKET_GO,
     PACKET_DIAG_STATE,
-    PACKET_ESP_STATUS
+    // PACKET_ESP_STATUS,
+    PACKET_REBASE,
+    PACKET_TYPES_COUNT
 } packet_code;
 
 /**
@@ -38,7 +40,8 @@ typedef enum
 {
     NODE_IDLE,
     NODE_PATH_LEAVE,
-    NODE_PATH_RETURN
+    NODE_PATH_RETURN,
+    NODE_STOPPED
 } node_state;
 
 
@@ -81,7 +84,16 @@ typedef struct
     double d_right; // cumulative distance the right motor has traveled since time 0
     double v_left; // current velocity of the left motor
     double d_left; // cumulative distance the left motor has traveled since time 0
-}diagnostic_node_state;
+} packet_diag_node_state;
+
+
+typedef struct
+{
+    char code = PACKET_REBASE;
+    double x;
+    double y;
+} packet_rebase;
+
 
 /**
  * @brief loads data into a packet structure (should be allocated already) from a byte buffer

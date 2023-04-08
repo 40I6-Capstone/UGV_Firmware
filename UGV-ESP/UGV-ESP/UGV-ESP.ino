@@ -10,10 +10,10 @@
 WebSocketsClient webSocket;
 
 String message;
-String *packet;
+// String *packet;
 uint8_t node_state_buffer[sizeof(packet_node_state) + 1];
 uint8_t path_packet_buffer[sizeof(packet_path_point) + 1];
-uint8_t diag_packet_buffer[sizeof(diagnostic_node_state) + 1];
+uint8_t diag_packet_buffer[sizeof(packet_diag_node_state) + 1];
 
 
 #define USE_SERIAL Serial
@@ -21,7 +21,7 @@ uint8_t diag_packet_buffer[sizeof(diagnostic_node_state) + 1];
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   packet_node_state *nodePacketPtr, nodePacket;
   packet_path_point *pathPacketPtr, pathPacket;
-  diagnostic_node_state *diagPacketPtr, diagPacket;
+  packet_diag_node_state *diagPacketPtr, diagPacket;
 
   switch (type) {
     case WStype_DISCONNECTED:
@@ -29,7 +29,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       break;
 
     case WStype_CONNECTED: {
-//        USE_SERIAL.print("Connected");
+        //        USE_SERIAL.print("Connected");
         // send message to server when Connected
         //      webSocket.sendTXT("Client Connected!");
         //webSocket.sendBIN(pdata, sizeof(data));
@@ -47,14 +47,14 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       //      USE_SERIAL.printf("[WSc] get binary length: %s\n", String(length));
       if (payload[0] == '1') { // send current node state packet
         USE_SERIAL.write(1); // Send 1 over serial to Pico, so that PICO responds with current node state packet
-        USE_SERIAL.readBytes(node_state_buffer, sizeof(packet_node_state) + 1);
-        webSocket.sendBIN(node_state_buffer, sizeof(packet_node_state) + 1); // Forward the node state packet binary stream to the Server
+        USE_SERIAL.readBytes(node_state_buffer, sizeof(packet_node_state));
+        webSocket.sendBIN(node_state_buffer, sizeof(packet_node_state)); // Forward the node state packet binary stream to the Server
         break;
       }
 
       if (payload[0] == '2') { // path packet
         // USE_SERIAL.write(payload, length);
-        USE_SERIAL.write(payload, sizeof(packet_path_point)+1); // write entire payload to Pico, it will detect the packet code and store the stream accordingly
+        USE_SERIAL.write(payload, sizeof(packet_path_point)); // write entire payload to Pico, it will detect the packet code and store the stream accordingly
         // TODO - ADD acknowledgement?
         break;
       }
@@ -73,9 +73,14 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 
       if (payload[0] == '5') { // send diagnostic node state packet
         USE_SERIAL.write(5); // Send 5 over serial to Pico, so that PICO responds with diagnostic state packet
-        USE_SERIAL.readBytes(diag_packet_buffer, sizeof(diagnostic_node_state) + 1);
-        webSocket.sendBIN(diag_packet_buffer, sizeof(diagnostic_node_state) + 1); // Forward the diag state packet binary stream to the Server
+        USE_SERIAL.readBytes(diag_packet_buffer, sizeof(packet_diag_node_state));
+        webSocket.sendBIN(diag_packet_buffer, sizeof(packet_diag_node_state)); // Forward the diag state packet binary stream to the Server
         break;
+      }
+
+      if (payload[0] == '6'){
+        USE_SERIAL.write(6);
+        USE_SERIAL.write(payload,sizeof(packet_rebase));
       }
 
       break;
@@ -103,19 +108,19 @@ void setup() {
   //   WiFi.begin("JM Pixel 7 Pro", "Julian1499");
   //  WiFi.begin("BELL864", "F7EAE5311517");
   //    WiFi.begin("OilLock", "oillock-capstone");
-//  USE_SERIAL.print("Trying to connect to WiFi...\n");
+  //  USE_SERIAL.print("Trying to connect to WiFi...\n");
   WiFi.begin("Pixel_Shaq", "shaq1234");
   while ( WiFi.status() != WL_CONNECTED ) {
-//    USE_SERIAL.print("WiFi failed, trying again\n");
+    //    USE_SERIAL.print("WiFi failed, trying again\n");
     digitalWrite(LED_BUILTIN, LOW);
     delay(250);
     digitalWrite(LED_BUILTIN, HIGH);
     delay(250);
   }
-//  USE_SERIAL.print("Connected to WIFI at ");
-//  USE_SERIAL.println(WiFi.localIP());
+  //  USE_SERIAL.print("Connected to WIFI at ");
+  //  USE_SERIAL.println(WiFi.localIP());
   digitalWrite(LED_BUILTIN, LOW);
-  
+
 
   //  WiFi.begin();
 
@@ -137,8 +142,10 @@ void setup() {
 
   // try every 1000 again if connection has failed
   webSocket.setReconnectInterval(1000);
-  
-//  USE_SERIAL.print("ESP BOOTED\n");
+
+  //  USE_SERIAL.print("ESP BOOTED\n");
+
+
 
 }
 
@@ -146,10 +153,21 @@ void setup() {
 void loop() {
   // webSocket.loop(); //Keep websocket alive?
   static unsigned long ts =  millis();
-  static char testChar = 'a';
+  static double xVal = 0.0;
 
-  if((millis() - ts) > 500UL){
-    USE_SERIAL.write(testChar++ % 'z');
+  if ((millis() - ts) > 1000UL) {
+    // USE_SERIAL.write(testChar++);
+    // if(testChar > 'z') testChar = 'a';
+    
+    packet_path_point testPoint= {
+      .x = xVal,
+      .y = 0
+    };
+    xVal += 1.0;
+
+    char * testPacket = (char*)malloc(sizeof(packet_path_point));
+    buff_from_packet(testPacket, &testPoint, sizeof(packet_path_point));
+    USE_SERIAL.write(testPacket, sizeof(packet_path_point));
     ts = millis();
   }
 
