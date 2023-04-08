@@ -20,6 +20,8 @@
 #include <iostream>
 #include <cmath>
 
+#include <pico/mutex.h>
+
 
 // #include "../common_lib/network_defines.hpp"
 // #include "../UGV-ESP/UGV-ESP/network_defines.hpp"
@@ -38,6 +40,8 @@
 UARTManager *uart_man;
 DifferentialDrive *drive;
 PathLoader *pathLoader;
+
+auto_init_mutex(pwrMtx);
 
 void gpio_isr(uint gpio, uint32_t events)
 {
@@ -81,6 +85,7 @@ void setupUARTSubscribers()
 
 
 
+    double driveSpeed = 0.2;
 
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
@@ -96,6 +101,20 @@ void core1_main()
     static bool pinState = false;
     while (1)
     {
+        // double left, right, spd;
+        // std::cin >> right;
+        // std::cin >> left;
+        // std::cin >> spd;
+        // std::cout << " right: " << right << " left: " << left  << " speed: " << spd <<  std::endl;
+        // mutex_enter_blocking(&pwrMtx);
+        // drive->setLeftGains(left, 0, 0);
+        // drive->setRightGains(right, 0, 0);
+        // driveSpeed = spd;
+        // drive->resetControllers();
+        // mutex_exit(&pwrMtx);
+
+
+
         uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
         {
@@ -116,34 +135,38 @@ void core0_main()
     sleep_ms(2000);
     uint64_t lastLoopTs = time_us_64();
     uint64_t motorLoop = time_us_64();
-    double leftPwr = 0.3;
-    double rightPwr = 0.3;
-    // drive->setLeftV(leftPwr);
-    // drive->setRightV(rightPwr);
+    uint64_t odomTs = time_us_64();
     while (1)
     {
         uint64_t currentTs = time_us_64();
-        // Main loop
+        if(currentTs - odomTs >10*1E3)
+        {
+            drive->update();
+        }
         if (currentTs - lastLoopTs > LOOP_TIME_US)
         {
-            drive->setDriveState(0,0.3);
-            drive->update();
-            std::cout << "Theta: " << drive->getAngle()
-            << " RightV: " << drive->getVRight() 
-            << " LeftV: " << drive->getVLeft()
-            << std::endl;
+            // drive->setDriveState(10,driveSpeed);
+
+
+            // mutex_enter_timeout_ms(&pwrMtx,10);
+            // drive->setLeftV(driveSpeed);
+            // drive->setRightV(driveSpeed);
+            // std::cout << "right v: " << drive->getVRight() << " left v: " << drive->getVLeft() << " setpoint: "<< driveSpeed << std::endl;
+            // mutex_exit(&pwrMtx);
+
+            // std::cout << "Theta: " << RAD_TO_DEG(drive->getPose().theta)
+            // << " X:     " << drive->getPose().x 
+            // << " Y:     " << drive->getPose().y
+            // << std::endl;
 
             // Reset timer
             lastLoopTs = currentTs;
         }
-        // if(currentTs - motorLoop > 3000 *1E3){
-        //     drive->setLeftV(leftPwr);
-        //     drive->setRightV(rightPwr);
+        if(currentTs - motorLoop > 3500 *1E3){
+            // driveSpeed = 0;
+            motorLoop = currentTs;
+        }
 
-        //     leftPwr = 0.0;
-        //     rightPwr = 0.0;
-        //     motorLoop = currentTs;
-        // }
         // else
         // {
             tight_loop_contents();

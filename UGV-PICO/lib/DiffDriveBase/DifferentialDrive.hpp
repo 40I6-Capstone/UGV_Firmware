@@ -166,7 +166,8 @@ void DifferentialDrive::setDriveState(double heading, double v){
 
 
 double DifferentialDrive::getFF(double setpoint){
-    return exp(5.729*setpoint)*0.0353;
+    // return exp(5.729*setpoint)*0.0353;
+    return 3.6526*std::pow(setpoint,3) + 1.0577*std::pow(setpoint,2) - 0.1532*setpoint + 0.0548;
 }
 
 
