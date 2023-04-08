@@ -9,13 +9,13 @@
  * @copyright Copyright (c) 2022
  * 
  */
-#pragma once
+
 
 #include <stdlib.h>
 #include <memory.h>
 #include <stdint.h>
 
-#define PACKET_MAX_SIZE 40
+#define PACKET_MAX_SIZE 256
 
 /**
  * @brief packet codes, usually sent ahead of the packet itself
@@ -29,8 +29,7 @@ typedef enum
     PACKET_STOP,
     PACKET_GO,
     PACKET_DIAG_STATE,
-    // PACKET_ESP_STATUS,
-    PACKET_REBASE,
+    PACKET_ESP_STATUS,
     PACKET_TYPES_COUNT
 } packet_code;
 
@@ -42,8 +41,7 @@ typedef enum
 {
     NODE_IDLE,
     NODE_PATH_LEAVE,
-    NODE_PATH_RETURN,
-    NODE_STOPPED
+    NODE_PATH_RETURN
 } node_state;
 
 
@@ -53,11 +51,12 @@ typedef enum
  */
 typedef struct
 {
-    char code = PACKET_NODE_STATE;
+    char code;
     double x;         // x position
     double y;         // y position
     double v;         // Linear velocity
     double theta;     // Heading
+    uint64_t ts_ms;   // Timestamp in ms
     node_state state; // Current executing state of the node
     double x_exp;     // expected x position relative to the start based on path
     double y_exp;     // expected y position relative to the start based on path
@@ -71,7 +70,7 @@ typedef struct
  */
 typedef struct
 {
-    char code = PACKET_PATH;
+    char code;
     double x;       // x position
     double y;       // y position
 } packet_path_point;
@@ -79,22 +78,13 @@ typedef struct
 
 typedef struct 
 {
-    char code = PACKET_DIAG_STATE;
+    char code;
     uint64_t ts_ms; // Timestamp in ms
     double v_right; // current velocity of the right motor
     double d_right; // cumulative distance the right motor has traveled since time 0
     double v_left; // current velocity of the left motor
     double d_left; // cumulative distance the left motor has traveled since time 0
-} packet_diag_node_state;
-
-
-typedef struct
-{
-    char code = PACKET_REBASE;
-    double x;
-    double y;
-} packet_rebase;
-
+}diagnostic_node_state;
 
 /**
  * @brief loads data into a packet structure (should be allocated already) from a byte buffer

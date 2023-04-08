@@ -1114,7 +1114,8 @@ private:
   void setMagnConf();
 
   float accelRange = BMX160_ACCEL_MG_LSB_2G * 9.8;
-  float gyroRange = BMX160_GYRO_SENSITIVITY_250DPS;
+  // float gyroRange = BMX160_GYRO_SENSITIVITY_250DPS;
+  float gyroRange = BMX160_GYRO_SENSITIVITY_2000DPS;
   uint8_t _addr = 0x68;
 
   sBmx160Dev_t *Obmx160;

@@ -15,74 +15,126 @@
 #include <pico/time.h>
 #include <stdlib.h>
 #include <string>
-
+#include <stdlib.h>
+#include <string>
 #include <iostream>
 #include <cmath>
 
-// #include "lib/hw_defines.h"
-// include "lib/number_constants.h"
-#include "../common_lib/network_defines.h"
+#include <pico/mutex.h>
+
+
+// #include "../common_lib/network_defines.hpp"
+// #include "../UGV-ESP/UGV-ESP/network_defines.hpp"
 
 #include "lib/PICO_UARTManager.hpp"
+// #include "lib/UART_Subscribers.hpp"
 #include "lib/DiffDriveBase/DifferentialDrive.hpp"
+#include "lib/PathLoader.hpp"
+#include "lib/ServoControl.hpp"
+// #include "lib/GeometryDefines.hpp"
+#include "lib/PurePursuit.hpp"
 
-// #include "lib/MotorControl.hpp"
-// #include "lib/QuadEncoder.hpp"
-// #include "lib/PICO_BMX160/PICO_DFRobot_BMX160.h"
-// #include "lib/PICO_BMX160/PICO_IMU.hpp"
-// #include "lib/DiffDriveOdom/DifferentialDriveOdometry.hpp"
+
 
 #define LOOP_TIME_US 20 * 1E3
 
 // #define TEST_UART
 
 UARTManager *uart_man;
-
 DifferentialDrive *drive;
+PathLoader *pathLoader;
+ServoControl *arm;
+
+// MUTEXES
+auto_init_mutex(pwrMtx);
+auto_init_mutex(poseMtx);
 
 void gpio_isr(uint gpio, uint32_t events)
 {
     if (gpio == PIN_ENC_RA || gpio == PIN_ENC_RB)
-    {
         drive->updateTicksRight();
-    }
     if (gpio == PIN_ENC_LA || gpio == PIN_ENC_LB)
-    {
         drive->updateTicksLeft();
-    }
 }
 
-double getSysTime()
+double getSysTime(){return double(time_us_64()) / 1E6;}
+
+
+
+void pathSubscriber(void *data, size_t length, packet_code code){
+    packet_path_point *pathPoint = (packet_path_point*)data;
+    pathLoader->load(*pathPoint);
+
+    // for(int i = 0; i< PATH_MAX_POINTS; i++){
+    //     packet_path_point tp = pathLoader->getActivePath()[i];
+    //     std::cout << "code: " << (int)(tp.code) << std::endl;
+    //     std::cout << "x: " << tp.x << std::endl;
+    //     std::cout << "y: " << tp.y << std::endl;
+    // }
+    //     std::cout << "--------" << std::endl;
+
+}
+
+void goSubscriber(void *data, size_t length, packet_code code){}   
+void stopSubscriber(void *data, size_t length, packet_code code){}   
+void diagSubscriber(void *data, size_t length, packet_code code){}   
+void stateSubscriber(void *data, size_t length, packet_code code){}   
+void rebaseSubscriber(void *data, size_t length, packet_code code){
+    packet_rebase *rebasePoint = (packet_rebase*)data;
+    Pose newPose = {.x = packet_}; 
+    mutex_enter_blocking(&poseMtx);
+    drive->setPose(*newPose);
+    mutex_exit(&poseMtx);
+}   
+
+void setupUARTSubscribers()
 {
-    return double(time_us_64()) / 1E6;
+    uart_man->subscribe(pathSubscriber,PACKET_PATH);
+    uart_man->subscribe(goSubscriber,PACKET_GO);
+    uart_man->subscribe(stopSubscriber,PACKET_STOP);
+    uart_man->subscribe(diagSubscriber,PACKET_DIAG_STATE);
+    uart_man->subscribe(stateSubscriber,PACKET_NODE_STATE);
+    uart_man->subscribe(rebaseSubscriber,PACKET_REBASE)
 }
 
+
+
+    double driveSpeed = 0.2;
 
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
 {
-
-    // Initalize uart manager
-    // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200, []()
-    //                            { uart_man->int_handler(); });
-
-    // uart_man->subscribe([]()
-    //                     {
-    //                             packet_path_point pack;
-    //                             uart_man->load(&pack, sizeof(pack));
-    //                             std::cout << "x: " << pack.x << std::endl;
-    //                             std::cout << "y: " << pack.y << std::endl;
-    //                             std::cout << "v: " << pack.v << std::endl;
-    //                             std::cout << "theta: " << pack.theta << std::endl;
-    //                             std::cout << "ts_ms: " << pack.ts_ms << std::endl; },
-    //                     PACKET_PATH);
+    
+    pathLoader = new PathLoader([](){
+        std::cout << "Buffer Swapped" << std::endl;
+     });
+    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
+    setupUARTSubscribers();
 
     static uint64_t ledTs = time_us_64();
+    static bool pinState = false;
     while (1)
     {
+        // double left, right, spd;
+        // std::cin >> right;
+        // std::cin >> left;
+        // std::cin >> spd;
+        // std::cout << " right: " << right << " left: " << left  << " speed: " << spd <<  std::endl;
+        // mutex_enter_blocking(&pwrMtx);
+        // drive->setLeftGains(left, 0, 0);
+        // drive->setRightGains(right, 0, 0);
+        // driveSpeed = spd;
+        // drive->resetControllers();
+        // mutex_exit(&pwrMtx);
+
+
+
+        uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
         {
-            gpio_put(PICO_DEFAULT_LED_PIN, !gpio_get_out_level(PICO_DEFAULT_LED_PIN));
+            gpio_put(PICO_DEFAULT_LED_PIN, pinState);
+            pinState = !pinState;
+            ledTs = time_us_64();
         }
     }
 }
@@ -94,22 +146,49 @@ void core0_main()
     drive = new DifferentialDrive(getSysTime);
     gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
+    arm = new ServoControl(PIN_SERVO);
+
+    sleep_ms(2000);
     uint64_t lastLoopTs = time_us_64();
+    uint64_t motorLoop = time_us_64();
+    uint64_t odomTs = time_us_64();
     while (1)
     {
-        // Main loop
-        if (time_us_64() - lastLoopTs > LOOP_TIME_US)
+        uint64_t currentTs = time_us_64();
+        if(currentTs - odomTs >10*1E3)
         {
-
+            mutex_enter_blocking(&poseMtx);
             drive->update();
+            mutex_exit(&poseMtx);
+        }
+        if (currentTs - lastLoopTs > LOOP_TIME_US)
+        {
+            // drive->setDriveState(10,driveSpeed);
+
+
+            // mutex_enter_timeout_ms(&pwrMtx,10);
+            // drive->setLeftV(driveSpeed);
+            // drive->setRightV(driveSpeed);
+            // std::cout << "right v: " << drive->getVRight() << " left v: " << drive->getVLeft() << " setpoint: "<< driveSpeed << std::endl;
+            // mutex_exit(&pwrMtx);
+
+            // std::cout << "Theta: " << RAD_TO_DEG(drive->getPose().theta)
+            // << " X:     " << drive->getPose().x 
+            // << " Y:     " << drive->getPose().y
+            // << std::endl;
 
             // Reset timer
-            lastLoopTs = time_us_64();
+            lastLoopTs = currentTs;
         }
-        else
-        {
+        // if(currentTs - motorLoop > 3500 *1E3){
+        //     // driveSpeed = 0;
+        //     motorLoop = currentTs;
+        // }
+
+        // else
+        // {
             tight_loop_contents();
-        }
+        // }
     }
 }
 
@@ -121,6 +200,7 @@ int main()
 
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
 
     // Wait until USB is connected before doing anything else
     while (!stdio_usb_connected())
@@ -132,4 +212,55 @@ int main()
     sleep_ms(10);
     multicore_launch_core1(core1_main); // Start up core1
     core0_main();                       // core0 main function
+}
+
+
+
+void robotFSMLoop(){
+    typedef enum {
+        IDLE, // Claw open, waiting to move
+        STOPPED, // Claw closed, waiting to move
+        LEAVING, // Claw closed, moving 
+        RETURNING // Claw closed, moving
+    } robState;
+
+    static robState currentState = IDLE;
+
+    switch(currentState){
+        case IDLE:
+            // Set claw open
+            // arm->write(OPEN_POSITION);
+            // Stop Drive
+            drive->stop();
+
+        break;
+
+        case STOPPED:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+            // Stop Drive
+            drive->stop();
+        break;
+
+        case LEAVING:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+            // Check if heading to last point
+            // Compute lookahead
+            // Compute heading and V
+            // Command drive
+
+        break;
+
+        case RETURNING:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+            // Check if heading to last point
+            // Compute lookahead
+            // Compute heading and V
+            // Command drive
+
+        break;
+    }
+
 }
