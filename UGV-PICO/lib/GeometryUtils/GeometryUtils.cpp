@@ -21,14 +21,14 @@ double GeometryUtils::headingToPoint(Pose from, Pose to){
 }
 
 double GeometryUtils::inputModulus(double input, double minInput, double maxInput){
-    // double modulus = maxInput - minInput;
+    double modulus = maxInput - minInput;
 
-    // int numMax = (int)((input-minInput)/modulus);
+    int numMax = (int)((input-minInput)/modulus);
 
-    // input -= numMax*modulus;
+    input -= numMax*modulus;
 
-    // int numMin = (int)((input-maxInput)/modulus);
-    // input -= numMin*modulus;
+    int numMin = (int)((input-maxInput)/modulus);
+    input -= numMin*modulus;
 
     return input;
 }

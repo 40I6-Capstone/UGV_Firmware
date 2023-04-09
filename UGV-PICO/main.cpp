@@ -203,7 +203,7 @@ void core0_main()
             // Reset timer
             // testPose.x += 0.03*std::cos(DEG_TO_RAD(heading));
             // testPose.y += 0.03*std::sin(DEG_TO_RAD(heading));
-            drive->setDriveState(heading,0.1);
+            // drive->setDriveState(heading,0.1);
             if(GeometryUtils::distToPoint(current, purep->getLastPose()) < 0.01){
                 std::cout << "PATH DONE" <<std::endl;
                 // reverse = !reverse;
