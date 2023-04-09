@@ -1,6 +1,6 @@
 #include "GeometryUtils.hpp"
 
-double distToPoint(Pose from, Pose to){
+double GeometryUtils::distToPoint(Pose from, Pose to){
     double deltaX = to.x - from.x;
     double deltaY = to.y - from.y;
 
@@ -12,15 +12,15 @@ double distToPoint(Pose from, Pose to){
 }
 
 
-double headingToPoint(Pose from, Pose to){
+double GeometryUtils::headingToPoint(Pose from, Pose to){
     double deltaX = to.x - from.x;
     double deltaY = to.y - from.y;
     double headingRad = atan2(deltaY, deltaX);
     
-    return RAD_TO_DEG(headingRad);
+    return GeometryUtils::radToDeg(headingRad);
 }
 
-double inputModulus(double input, double minInput, double maxInput){
+double GeometryUtils::inputModulus(double input, double minInput, double maxInput){
     double ret = input;
     double modulus = maxInput - minInput;
 
@@ -35,17 +35,26 @@ double inputModulus(double input, double minInput, double maxInput){
 }
 
 
-double dotProd(Pose a, Pose b){
+double GeometryUtils::dotProd(Pose a, Pose b){
     return a.x * b.x + a.y * b.y;
 }
 
-Pose relativeTo(Pose base, Pose to){
+GeometryUtils::Pose GeometryUtils::relativeTo(Pose base, Pose to){
     double relativeX = to.x - base.x;
     double relativeY = to.y - base.y;
 
     return {.x = relativeX, .y = relativeY, .theta = 0};
 }
 
-double flipAngle(double angle){
+double GeometryUtils::flipAngle(double angle){
     return inputModulus(angle+180, -180, 180);
+}
+
+double GeometryUtils::degToRad(double deg){
+    return deg*M_PI/180.;
+}
+
+
+double GeometryUtils::radToDeg(double rad){
+    return rad*180./M_PI;
 }

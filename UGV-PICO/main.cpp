@@ -34,33 +34,36 @@
 // #include "lib/GeometryDefines.hpp"
 #include "lib/PurePursuit.hpp"
 #include "lib/TestPath.hpp"
+#include "lib/GeometryUtils/GeometryUtils.hpp"
 
 
 
-// #define LOOP_TIME_US 20 * 1E3
-#define LOOP_TIME_US 1500 * 1E3
+#define LOOP_TIME_US 20 * 1E3
+// #define LOOP_TIME_US 1500 * 1E3
 
 // #define TEST_UART
 
 // UARTManager *uart_man;
-// DifferentialDrive *drive;
+DifferentialDrive *drive;
 // PathLoader *pathLoader;
 PurePursuit *purep;
 // ServoControl *arm;
 
-
+double getSysTime(){
+    return double(time_us_64()) / 1E6;
+}
 
 // MUTEXES
 auto_init_mutex(pwrMtx);
 auto_init_mutex(poseMtx);
 
-// void gpio_isr(uint gpio, uint32_t events)
-// {
-//     if (gpio == PIN_ENC_RA || gpio == PIN_ENC_RB)
-//         drive->updateTicksRight();
-//     if (gpio == PIN_ENC_LA || gpio == PIN_ENC_LB)
-//         drive->updateTicksLeft();
-// }
+void gpio_isr(uint gpio, uint32_t events)
+{
+    if (gpio == PIN_ENC_RA || gpio == PIN_ENC_RB)
+        drive->updateTicksRight();
+    if (gpio == PIN_ENC_LA || gpio == PIN_ENC_LB)
+        drive->updateTicksLeft();
+}
 
 
 
@@ -151,15 +154,15 @@ void core1_main()
 void core0_main()
 {
 
-    // drive = new DifferentialDrive([]()->double{
-    //     return double(time_us_64()) / 1E6;
-    // });
-    // gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
-
+    drive = new DifferentialDrive(getSysTime);
+    gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
+    std::cout << "Drive Setup" << std::endl;
     // purep = new PurePursuit(0.1,drive->getPose(),false);
     bool reverse = false;
-    purep = new PurePursuit(0.02,{.x = 0.0, .y = 0.0, .theta = 0.0},reverse);
+    purep = new PurePursuit(0.01,{.x = 0.0, .y = 0.0, .theta = 0.0},reverse);
+    std::cout << "PurePursuit Setup" << std::endl;
     // arm = new ServoControl(PIN_SERVO);
+
 
 
     sleep_ms(2000);
@@ -168,7 +171,7 @@ void core0_main()
     uint64_t motorLoop = time_us_64();
     uint64_t odomTs = time_us_64();
 
-    static Pose testPose = {.x = 0, .y =0, .theta = 0};
+    // static Pose testPose = {.x = 0, .y =0, .theta = 0};
     // static int index = 0;
     purep->setPath(testPath1, 5);
     while (1)
@@ -184,8 +187,7 @@ void core0_main()
         if (currentTs - lastLoopTs > LOOP_TIME_US)
         {
             // drive->setDriveState(10,driveSpeed);
-
-
+            drive->update();
             // mutex_enter_timeout_ms(&pwrMtx,10);
             // drive->setLeftV(driveSpeed);
             // drive->setRightV(driveSpeed);
@@ -196,20 +198,24 @@ void core0_main()
             // << " X:     " << drive->getPose().x 
             // << " Y:     " << drive->getPose().y
             // << std::endl;
+            GeometryUtils::Pose current = drive->getPose();
 
-            std::cout << "PoseX:   " << testPose.x << " PoseY:   " << testPose.y << std::endl;
-            Pose dest = purep->getLookAheadPose(testPose);
+            // std::cout << "PoseX:   " << current.x << " PoseY:   " << current.y << std::endl;
+            std::cout<< current.x << "," << current.y <<std::endl;
+            GeometryUtils::Pose dest = purep->getLookAheadPose(current);
             // Pose dest = purep->poseFromPacket(testPath1[index]);
-            double heading = purep->getLookAheadHeading(testPose);
-            std::cout << "TargetX: " << dest.x <<     " TargetY: " << dest.y << " Heading: " << heading  << "\n" << std::endl; 
+            double heading = purep->getLookAheadHeading(current);
+            // std::cout << "TargetX: " << dest.x <<     " TargetY: " << dest.y << " Heading: " << heading  << "\n" << std::endl; 
             // index = (index+1) % 5;
             // Reset timer
-            testPose.x += 0.03*std::cos(DEG_TO_RAD(heading));
-            testPose.y += 0.03*std::sin(DEG_TO_RAD(heading));
-            if(distToPoint(testPose, purep->getLastPose()) < 0.04){
+            // testPose.x += 0.03*std::cos(DEG_TO_RAD(heading));
+            // testPose.y += 0.03*std::sin(DEG_TO_RAD(heading));
+            drive->setDriveState(heading,0.1);
+            if(GeometryUtils::distToPoint(current, purep->getLastPose()) < 0.01){
                 std::cout << "PATH DONE" <<std::endl;
-                reverse = !reverse;
-                purep->setReversed(reverse);
+                // reverse = !reverse;
+                // purep->setReversed(reverse);
+                drive->stop();
             }
             lastLoopTs = currentTs;
         }

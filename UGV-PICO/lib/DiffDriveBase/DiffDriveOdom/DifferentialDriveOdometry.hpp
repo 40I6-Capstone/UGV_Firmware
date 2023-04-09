@@ -9,14 +9,14 @@
 class DifferentialDriveOdometry
 {
 public:
-    DifferentialDriveOdometry(double initialAngle, Pose initialPose);
+    DifferentialDriveOdometry(double initialAngle, GeometryUtils::Pose initialPose);
     DifferentialDriveOdometry(double initialAngle);
-    Pose getCurrentPose();
-    Pose update(double distL, double distR, double angle);
-    void setPose(Pose newPose, double gyroAngle);
+    GeometryUtils::Pose getCurrentPose();
+    GeometryUtils::Pose update(double distL, double distR, double angle);
+    void setPose(GeometryUtils::Pose newPose, double gyroAngle);
 
 private:
-    Pose currentPose;
+    GeometryUtils::Pose currentPose;
     double initialAngle; // Initial gyro angle, used to offset later
     double distR,distL; // Last distance report from each encoder
 };

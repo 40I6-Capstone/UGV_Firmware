@@ -1,16 +1,19 @@
 #include "DifferentialDriveOdometry.hpp"
 
+
+
+
 DifferentialDriveOdometry::DifferentialDriveOdometry(double initialAngle)
     : DifferentialDriveOdometry(initialAngle, {.x = 0, .y = 0, .theta = 0}) {}
 
-DifferentialDriveOdometry::DifferentialDriveOdometry(double initialAngle, Pose initialPose)
+DifferentialDriveOdometry::DifferentialDriveOdometry(double initialAngle, GeometryUtils::Pose initialPose)
     : initialAngle{initialAngle}, currentPose{initialPose}
 {
     this->distL = 0;
     this->distR = 0;
 }
 
-Pose DifferentialDriveOdometry::getCurrentPose()
+GeometryUtils::Pose DifferentialDriveOdometry::getCurrentPose()
 {
     return this->currentPose;
 }
@@ -20,7 +23,7 @@ Pose DifferentialDriveOdometry::getCurrentPose()
  * @param distL distance traveled by left encoder
  * @param angleRad chassis angle in radians
  */
-Pose DifferentialDriveOdometry::update(double distR, double distL, double angleRad)
+GeometryUtils::Pose DifferentialDriveOdometry::update(double distR, double distL, double angleRad)
 {
     // Change in robot heading
     double angle = angleRad - this->initialAngle;    // remove initial offset
@@ -70,8 +73,8 @@ Pose DifferentialDriveOdometry::update(double distR, double distL, double angleR
     return this->currentPose;
 }
 
-void DifferentialDriveOdometry::setPose(Pose pose, double gyroAngle)
+void DifferentialDriveOdometry::setPose(GeometryUtils::Pose pose, double gyroAngle)
 {
-    this->initialAngle = DEG_TO_RAD(gyroAngle);
+    this->initialAngle = GeometryUtils::degToRad(gyroAngle);
     this->currentPose = pose;
 }

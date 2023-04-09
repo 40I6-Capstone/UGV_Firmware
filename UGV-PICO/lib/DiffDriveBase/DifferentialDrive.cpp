@@ -17,6 +17,7 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
 
     anglePID = new PIDController(getSysTime);
     anglePID->setGains(TURN_KP,TURN_KI,TURN_KD);
+    anglePID->setContinuous(-180.,180.);
 
     leftPID = new PIDController(getSysTime);
     leftPID->setGains(LEFT_KP,LEFT_KI,LEFT_KD);
@@ -28,11 +29,14 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
     this->imu = new PICO_IMU(I2C_INST, PIN_SDA, PIN_SCL);
     bool imuSetupSuccess;
     imuSetupSuccess = imu->begin();
-    // std::cout << (imuSetupSuccess ? "Setup Success" : "Setup Fail") << std::endl;
+    std::cout << (imuSetupSuccess ? "IMU Setup Success" : "IMU Setup Fail") << std::endl;
     sleep_ms(100);
     imu->update();
+    std::cout << "IMU updated" << std::endl;
+    // odom = new DifferentialDriveOdometry(DEG_TO_RAD(imu->getAngle()));
+    odom = new DifferentialDriveOdometry(0);
+    std::cout << "Odom Setup" << std::endl;
 
-    odom = new DifferentialDriveOdometry(DEG_TO_RAD(imu->getAngle()));
 }
 
 
@@ -49,14 +53,14 @@ void DifferentialDrive::setRight(double output){
 
 void DifferentialDrive::update()
 {
-    odom->update(enc_right->getPosition(), enc_left->getPosition(), DEG_TO_RAD(imu->getAngle()));
+    odom->update(enc_right->getPosition(), enc_left->getPosition(), GeometryUtils::degToRad(imu->getAngle()));
     // std::cout << "Gyro: " << imu->getAngle() << std::endl;
     // std::cout << "EncR: " << enc_right->getPosition() << " EncL: " << enc_left->getPosition() << std::endl;
     // Pose currentPose = odom->getCurrentPose();
     // std::cout << "Pose: " << currentPose.x << " " << currentPose.y << " " << RAD_TO_DEG(currentPose.theta) << " " << std::endl;
 }
 
-Pose DifferentialDrive::getPose(){
+GeometryUtils::Pose DifferentialDrive::getPose(){
     return this->odom->getCurrentPose();
 }
 
@@ -137,11 +141,11 @@ void DifferentialDrive::stop(){
 }
 
 
-double DifferentialDrive::distanceToPoint(Pose to){
-    return distToPoint(this->getPose(),to);
+double DifferentialDrive::distanceToPoint(GeometryUtils::Pose to){
+    return GeometryUtils::distToPoint(this->getPose(),to);
 }
 
 
-void DifferentialDrive::setPose(Pose newPose){
+void DifferentialDrive::setPose(GeometryUtils::Pose newPose){
     this->odom->setPose(newPose, imu->getAngle());
 }

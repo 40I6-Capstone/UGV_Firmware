@@ -8,6 +8,7 @@
 #include <iostream>
 #include "DriveHWConstants.hpp"
 #include <cmath>
+#include "../GeometryUtils/GeometryUtils.hpp"
 
 
 class DifferentialDrive
@@ -48,10 +49,10 @@ public:
     void setRightGains(double kP, double kI, double kD);
     void resetControllers();
     void stop();
-    double distanceToPoint(Pose);
+    double distanceToPoint(GeometryUtils::Pose);
 
     
-    Pose getPose();
-    void setPose(Pose newPose);
+    GeometryUtils::Pose getPose();
+    void setPose(GeometryUtils::Pose newPose);
 };
 

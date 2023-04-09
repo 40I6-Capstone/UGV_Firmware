@@ -8,15 +8,15 @@
 class PurePursuit{
 
     public:
-        PurePursuit(double, Pose, bool);
-        double getLookAheadHeading(Pose);
-        Pose getLookAheadPose(Pose);
-        Pose getLookAheadPose();
+        PurePursuit(double, GeometryUtils::Pose, bool);
+        double getLookAheadHeading(GeometryUtils::Pose);
+        GeometryUtils::Pose getLookAheadPose(GeometryUtils::Pose);
+        GeometryUtils::Pose getLookAheadPose();
         void setPath(packet_path_point*,int);
         bool isLookAheadLast();
-        Pose poseFromPacket(packet_path_point);
+        GeometryUtils::Pose poseFromPacket(packet_path_point);
         void setReversed(bool);
-        Pose getLastPose();
+        GeometryUtils::Pose getLastPose();
 
 
     private:
@@ -25,13 +25,13 @@ class PurePursuit{
         int nextPoseIndex;
         bool isReversed;
         double lookAheadDist;
-        void updateLookAhead(Pose);
-        int getClosestPoseIndex(Pose);
+        void updateLookAhead(GeometryUtils::Pose);
+        int getClosestPoseIndex(GeometryUtils::Pose);
         int getLastIndex();
 };
 
 
-PurePursuit::PurePursuit(double lookAheadDist, Pose currentPose, bool isReversed){
+PurePursuit::PurePursuit(double lookAheadDist, GeometryUtils::Pose currentPose, bool isReversed){
     this->lookAheadDist = lookAheadDist;
     this->isReversed = isReversed;
     // Update next pose index and the next pose
@@ -50,13 +50,13 @@ void PurePursuit::setPath(packet_path_point *path, int length){
 }
 
 
-int PurePursuit::getClosestPoseIndex(Pose currentPose){
+int PurePursuit::getClosestPoseIndex(GeometryUtils::Pose currentPose){
     int closestIndex = -1;
     double minDist = std::numeric_limits<double>::max();
     for(int i = 0; i < this->pathSize; i++ ){
         int checkIndex = this->isReversed? this->pathSize-1-i : i; // Current point to check against
-        Pose checkPose = this->poseFromPacket(this->path[checkIndex]); // Create a pose from packet point
-        double dist = distToPoint(currentPose,checkPose); // Compute distance to point
+        GeometryUtils::Pose checkPose = this->poseFromPacket(this->path[checkIndex]); // Create a pose from packet point
+        double dist = GeometryUtils::distToPoint(currentPose,checkPose); // Compute distance to point
         if(dist < minDist){ // Check if distance is smaller than current minimum
             // Update Index
             closestIndex = checkIndex;
@@ -72,7 +72,7 @@ int PurePursuit::getClosestPoseIndex(Pose currentPose){
 /**
  * @brief updates the lookahead index given the current pose
 */
-void PurePursuit::updateLookAhead(Pose currentPose){
+void PurePursuit::updateLookAhead(GeometryUtils::Pose currentPose){
     // Check if next pose is last pose
     // if(isLookAheadLast()){
     //     std::cout << " LOOKING AT END" << std::endl;
@@ -98,13 +98,13 @@ void PurePursuit::updateLookAhead(Pose currentPose){
 
     // Closest point isn't the last point, iterate along the path until a point is larger than lookahead
     int direction = this->isReversed? -1:1;
-    Pose closestPose = poseFromPacket(this->path[closestIndex]);
+    GeometryUtils::Pose closestPose = poseFromPacket(this->path[closestIndex]);
     for(int i = 0; i < abs(closestIndex-getLastIndex()); i++){
         int checkIndex = i*direction + closestIndex;
-        Pose testPose = poseFromPacket(this->path[checkIndex]);
-        Pose nextTestPose = poseFromPacket(this->path[checkIndex+direction]);
-        if(distToPoint(currentPose, testPose) > this->lookAheadDist 
-            && dotProd(relativeTo(currentPose,testPose),relativeTo(currentPose,nextTestPose)) > 0.){ 
+        GeometryUtils::Pose testPose = poseFromPacket(this->path[checkIndex]);
+        GeometryUtils::Pose nextTestPose = poseFromPacket(this->path[checkIndex+direction]);
+        if(GeometryUtils::distToPoint(currentPose, testPose) > this->lookAheadDist 
+            && GeometryUtils::dotProd(GeometryUtils::relativeTo(currentPose,testPose),GeometryUtils::relativeTo(currentPose,nextTestPose)) > 0.){ 
             this->nextPoseIndex = checkIndex; 
             return;
         }
@@ -127,25 +127,25 @@ bool PurePursuit::isLookAheadLast(){
 /**
  * @brief returns the lookahead pose
 */
-Pose PurePursuit::getLookAheadPose(Pose currentPose){
+GeometryUtils::Pose PurePursuit::getLookAheadPose(GeometryUtils::Pose currentPose){
     // Update next pose
     this->updateLookAhead(currentPose);
     return getLookAheadPose();
 }
 
-Pose PurePursuit::getLookAheadPose(){
+GeometryUtils::Pose PurePursuit::getLookAheadPose(){
     return poseFromPacket(this->path[this->nextPoseIndex]);
 }
 
 
 
-double PurePursuit::getLookAheadHeading(Pose current){
-    return headingToPoint(current, this->getLookAheadPose());
+double PurePursuit::getLookAheadHeading(GeometryUtils::Pose current){
+    return GeometryUtils::headingToPoint(current, this->getLookAheadPose());
 }
 
 
-Pose PurePursuit::poseFromPacket(packet_path_point packet){
-    Pose ret = {.x = packet.x, .y = packet.y };
+GeometryUtils::Pose PurePursuit::poseFromPacket(packet_path_point packet){
+    GeometryUtils::Pose ret = {.x = packet.x, .y = packet.y };
     return ret;
 }
 
@@ -153,6 +153,6 @@ void PurePursuit::setReversed(bool isReversed){
     this->isReversed = isReversed;
 }
 
-Pose PurePursuit::getLastPose(){
+GeometryUtils::Pose PurePursuit::getLastPose(){
     return poseFromPacket(this->path[getLastIndex()]);
 }
