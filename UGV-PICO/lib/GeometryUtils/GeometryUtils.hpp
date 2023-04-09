@@ -9,7 +9,7 @@ typedef struct
 {
     double x; // X coord m
     double y; // Y coord m
-    double theta; // Angle in Radians
+    double theta = 0; // Angle in Radians
 } Pose;
 
 
@@ -17,3 +17,9 @@ typedef struct
 double headingToPoint(Pose from, Pose to);
 
 double distToPoint(Pose from, Pose to);
+
+double inputModulus(double input, double minInput, double maxInput);
+
+double dotProd(Pose a, Pose b);
+
+Pose relativeTo(Pose base, Pose to);

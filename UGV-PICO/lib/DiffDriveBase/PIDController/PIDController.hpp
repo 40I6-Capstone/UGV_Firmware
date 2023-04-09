@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "../../GeometryUtils/GeometryUtils.hpp"
 
 class PIDController
 {
@@ -14,6 +15,9 @@ private:
     double setpoint;
     double threshold;
     double output;
+    bool isContinuous;
+    double minInput;
+    double maxInput;
 
 public:
     PIDController(double (*getSysTime)());
@@ -24,5 +28,6 @@ public:
     void reset();
     bool atSetpoint();
     double getOutput();
+    void setContinuous(double minInput, double maxInput);
 };
 

@@ -26,6 +26,15 @@ void PIDController::setGains(double kP, double kI, double kD)
 }
 
 
+
+void PIDController::setContinuous(double minInput, double maxInput){
+    this->isContinuous = true;
+    this->minInput = minInput;
+    this->maxInput = maxInput;
+}
+
+
+
 double PIDController::calculate(double measurement)
 {
     return this->calculate(this->setpoint, measurement);
@@ -34,7 +43,15 @@ double PIDController::calculate(double measurement)
 double PIDController::calculate(double setpoint, double measurement)
 {
 
-    this->err = setpoint - measurement;
+    if(this->isContinuous){
+        double errorBound = (this->maxInput - this->minInput)/2.;
+        this->err = inputModulus(setpoint - measurement, -errorBound, errorBound);
+    } else {
+        this->err = setpoint - measurement;
+    }
+
+
+
     this->errSum += this->err;
 
     double P = this->kP * this->err;

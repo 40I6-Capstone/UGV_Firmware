@@ -33,83 +33,89 @@
 #include "lib/ServoControl.hpp"
 // #include "lib/GeometryDefines.hpp"
 #include "lib/PurePursuit.hpp"
+#include "lib/TestPath.hpp"
 
 
 
-#define LOOP_TIME_US 20 * 1E3
+// #define LOOP_TIME_US 20 * 1E3
+#define LOOP_TIME_US 1500 * 1E3
 
 // #define TEST_UART
 
-UARTManager *uart_man;
-DifferentialDrive *drive;
-PathLoader *pathLoader;
-ServoControl *arm;
+// UARTManager *uart_man;
+// DifferentialDrive *drive;
+// PathLoader *pathLoader;
+PurePursuit *purep;
+// ServoControl *arm;
+
+
 
 // MUTEXES
 auto_init_mutex(pwrMtx);
 auto_init_mutex(poseMtx);
 
-void gpio_isr(uint gpio, uint32_t events)
-{
-    if (gpio == PIN_ENC_RA || gpio == PIN_ENC_RB)
-        drive->updateTicksRight();
-    if (gpio == PIN_ENC_LA || gpio == PIN_ENC_LB)
-        drive->updateTicksLeft();
-}
-
-double getSysTime(){return double(time_us_64()) / 1E6;}
+// void gpio_isr(uint gpio, uint32_t events)
+// {
+//     if (gpio == PIN_ENC_RA || gpio == PIN_ENC_RB)
+//         drive->updateTicksRight();
+//     if (gpio == PIN_ENC_LA || gpio == PIN_ENC_LB)
+//         drive->updateTicksLeft();
+// }
 
 
 
-void pathSubscriber(void *data, size_t length, packet_code code){
-    packet_path_point *pathPoint = (packet_path_point*)data;
-    pathLoader->load(*pathPoint);
+// UART SUBSCRIBERS
+// void pathSubscriber(void *data, size_t length, packet_code code){
+//     packet_path_point *pathPoint = (packet_path_point*)data;
+//     pathLoader->load(*pathPoint);
 
-    // for(int i = 0; i< PATH_MAX_POINTS; i++){
-    //     packet_path_point tp = pathLoader->getActivePath()[i];
-    //     std::cout << "code: " << (int)(tp.code) << std::endl;
-    //     std::cout << "x: " << tp.x << std::endl;
-    //     std::cout << "y: " << tp.y << std::endl;
-    // }
-    //     std::cout << "--------" << std::endl;
+//     // for(int i = 0; i< PATH_MAX_POINTS; i++){
+//     //     packet_path_point tp = pathLoader->getActivePath()[i];
+//     //     std::cout << "code: " << (int)(tp.code) << std::endl;
+//     //     std::cout << "x: " << tp.x << std::endl;
+//     //     std::cout << "y: " << tp.y << std::endl;
+//     // }
+//     //     std::cout << "--------" << std::endl;
 
-}
+// }
 
-void goSubscriber(void *data, size_t length, packet_code code){}   
-void stopSubscriber(void *data, size_t length, packet_code code){}   
-void diagSubscriber(void *data, size_t length, packet_code code){}   
-void stateSubscriber(void *data, size_t length, packet_code code){}   
-void rebaseSubscriber(void *data, size_t length, packet_code code){
-    packet_rebase *rebasePoint = (packet_rebase*)data;
-    Pose newPose = {.x = packet_}; 
-    mutex_enter_blocking(&poseMtx);
-    drive->setPose(*newPose);
-    mutex_exit(&poseMtx);
-}   
+// void goSubscriber(void *data, size_t length, packet_code code){}   
+// void stopSubscriber(void *data, size_t length, packet_code code){}   
+// void diagSubscriber(void *data, size_t length, packet_code code){}   
+// void stateSubscriber(void *data, size_t length, packet_code code){}   
 
-void setupUARTSubscribers()
-{
-    uart_man->subscribe(pathSubscriber,PACKET_PATH);
-    uart_man->subscribe(goSubscriber,PACKET_GO);
-    uart_man->subscribe(stopSubscriber,PACKET_STOP);
-    uart_man->subscribe(diagSubscriber,PACKET_DIAG_STATE);
-    uart_man->subscribe(stateSubscriber,PACKET_NODE_STATE);
-    uart_man->subscribe(rebaseSubscriber,PACKET_REBASE)
-}
+// void rebaseSubscriber(void *data, size_t length, packet_code code){
+//     packet_rebase *rebasePoint = (packet_rebase*)data;
+//     Pose newPose = {.x = rebasePoint->x, .y = rebasePoint->y, .theta = rebasePoint->heading}; 
+//     mutex_enter_blocking(&poseMtx);
+//     // drive->setPose(newPose);
+//     mutex_exit(&poseMtx);
+// }   
+
+// void setupUARTSubscribers()
+// {
+//     uart_man->subscribe(pathSubscriber,PACKET_PATH);
+//     uart_man->subscribe(goSubscriber,PACKET_GO);
+//     uart_man->subscribe(stopSubscriber,PACKET_STOP);
+//     uart_man->subscribe(diagSubscriber,PACKET_DIAG_STATE);
+//     uart_man->subscribe(stateSubscriber,PACKET_NODE_STATE);
+//     uart_man->subscribe(rebaseSubscriber,PACKET_REBASE);
+// }
 
 
 
-    double driveSpeed = 0.2;
+double driveSpeed = 0.2;
 
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
 {
+    std::cout << "Core 1 begin" << std::endl;
     
-    pathLoader = new PathLoader([](){
-        std::cout << "Buffer Swapped" << std::endl;
-     });
-    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
-    setupUARTSubscribers();
+    // pathLoader = new PathLoader([](){
+    //     std::cout << "Buffer Swapped" << std::endl;
+    //  });
+    // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
+    // setupUARTSubscribers();
 
     static uint64_t ledTs = time_us_64();
     static bool pinState = false;
@@ -129,7 +135,7 @@ void core1_main()
 
 
 
-        uart_man->loop();
+        // uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
         {
             gpio_put(PICO_DEFAULT_LED_PIN, pinState);
@@ -143,24 +149,35 @@ void core1_main()
 void core0_main()
 {
 
-    drive = new DifferentialDrive(getSysTime);
-    gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
+    // drive = new DifferentialDrive([]()->double{
+    //     return double(time_us_64()) / 1E6;
+    // });
+    // gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
-    arm = new ServoControl(PIN_SERVO);
+    // purep = new PurePursuit(0.1,drive->getPose(),false);
+    purep = new PurePursuit(0.1,{.x = 0.0, .y = 0.0, .theta = 0.0},false);
+    // arm = new ServoControl(PIN_SERVO);
+
 
     sleep_ms(2000);
+    std::cout << "Core 0 begin" << std::endl;
     uint64_t lastLoopTs = time_us_64();
     uint64_t motorLoop = time_us_64();
     uint64_t odomTs = time_us_64();
+
+    static Pose testPose = {.x = 0, .y =0, .theta = 0};
+    static int index = 0;
+    purep->setPath(testPath1, 5);
     while (1)
     {
         uint64_t currentTs = time_us_64();
-        if(currentTs - odomTs >10*1E3)
-        {
-            mutex_enter_blocking(&poseMtx);
-            drive->update();
-            mutex_exit(&poseMtx);
-        }
+        // if(currentTs - odomTs >10*1E3)
+        // {
+        //     mutex_enter_blocking(&poseMtx);
+        //     // drive->update();
+        //     mutex_exit(&poseMtx);
+        //     odomTs = currentTs;
+        // }
         if (currentTs - lastLoopTs > LOOP_TIME_US)
         {
             // drive->setDriveState(10,driveSpeed);
@@ -177,7 +194,17 @@ void core0_main()
             // << " Y:     " << drive->getPose().y
             // << std::endl;
 
+            std::cout << "PoseX:   " << testPose.x << " PoseY:   " << testPose.y << std::endl;
+            Pose dest = purep->getLookAheadPose(testPose);
+            // Pose dest = purep->poseFromPacket(testPath1[index]);
+            std::cout << "TargetX: " << dest.x <<     " TargetY: " << dest.y << " Heading: " << purep->getLookAheadHeading(testPose) << "\n" << std::endl; 
+            // index = (index+1) % 5;
             // Reset timer
+            testPose.y += 0.2;
+            if(testPose.y > 2.5){
+                std::cout << "PATH DONE" <<std::endl;
+                testPose.y = 0;
+            }
             lastLoopTs = currentTs;
         }
         // if(currentTs - motorLoop > 3500 *1E3){
@@ -231,7 +258,7 @@ void robotFSMLoop(){
             // Set claw open
             // arm->write(OPEN_POSITION);
             // Stop Drive
-            drive->stop();
+            // drive->stop();
 
         break;
 
@@ -239,7 +266,7 @@ void robotFSMLoop(){
             // Set claw closed
             // arm->write(CLOSED_POSITION);
             // Stop Drive
-            drive->stop();
+            // drive->stop();
         break;
 
         case LEAVING:

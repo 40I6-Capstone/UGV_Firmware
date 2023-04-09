@@ -93,6 +93,7 @@ typedef struct
     char code = PACKET_REBASE;
     double x;
     double y;
+    double heading;
 } packet_rebase;
 
 

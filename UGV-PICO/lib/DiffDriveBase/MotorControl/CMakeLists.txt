@@ -1,0 +1,3 @@
+add_library(motor_control MotorControl.hpp MotorControl.cpp)
+
+target_link_libraries(motor_control pico_stdlib hardware_pwm)

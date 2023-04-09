@@ -150,7 +150,7 @@ void UARTManager::handleData()
                 break;
 
             case PACKET_DIAG_STATE:
-                packet_size = sizeof(diagnostic_node_state);
+                packet_size = sizeof(packet_diag_node_state);
                 break;
 
             default: // Flush

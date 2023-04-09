@@ -1,7 +1,7 @@
 #include "PIDController/PIDController.hpp"
 #include "PICO_BMX160/PICO_IMU.hpp"
-#include "MotorControl.hpp"
-#include "QuadEncoder.hpp"
+#include "MotorControl/MotorControl.hpp"
+#include "QuadEncoder/QuadEncoder.hpp"
 #include "DiffDriveOdom/DifferentialDriveOdometry.hpp"
 #include <pico/stdlib.h>
 #include "DriveConstants.hpp"

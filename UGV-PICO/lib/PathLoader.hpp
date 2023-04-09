@@ -1,3 +1,4 @@
+#pragma once
 #include "../../UGV-ESP/UGV-ESP/network_defines.hpp"
 #include <iostream>
 
@@ -17,6 +18,7 @@ public:
     PathLoader(void (*swapCallback)());
     void load(packet_path_point point);
     packet_path_point *getActivePath();
+    const int size = PATH_MAX_POINTS;
 };
 
 PathLoader::PathLoader(void (*swapCallback)())
