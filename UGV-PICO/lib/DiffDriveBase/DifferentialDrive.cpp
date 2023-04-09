@@ -33,8 +33,8 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
     sleep_ms(100);
     imu->update();
     std::cout << "IMU updated" << std::endl;
-    // odom = new DifferentialDriveOdometry(DEG_TO_RAD(imu->getAngle()));
-    odom = new DifferentialDriveOdometry(0);
+    odom = new DifferentialDriveOdometry(GeometryUtils::degToRad(imu->getAngle()));
+    // odom = new DifferentialDriveOdometry(0);
     std::cout << "Odom Setup" << std::endl;
 
 }

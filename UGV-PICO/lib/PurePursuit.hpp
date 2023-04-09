@@ -83,12 +83,12 @@ void PurePursuit::updateLookAhead(GeometryUtils::Pose currentPose){
     int closestIndex = getClosestPoseIndex(currentPose);
     if(closestIndex == -1){ // If for some reason theres an error, start from the beginning
         closestIndex = isReversed ? this->pathSize-1 : 0; 
-        std::cout << "invalid closest" << std::endl;
+        // std::cout << "invalid closest" << std::endl;
         this->nextPoseIndex = closestIndex;
         return;
     }
 
-    std::cout << "CloseX: " << path[closestIndex].x << " Close Y: " << path[closestIndex].y << " Index: " << closestIndex <<std::endl; 
+    // std::cout << "CloseX: " << path[closestIndex].x << " Close Y: " << path[closestIndex].y << " Index: " << closestIndex <<std::endl; 
 
     // Check if closest point is last point
     if(closestIndex == getLastIndex()){

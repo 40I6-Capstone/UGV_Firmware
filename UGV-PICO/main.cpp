@@ -177,13 +177,6 @@ void core0_main()
     while (1)
     {
         uint64_t currentTs = time_us_64();
-        // if(currentTs - odomTs >10*1E3)
-        // {
-        //     mutex_enter_blocking(&poseMtx);
-        //     // drive->update();
-        //     mutex_exit(&poseMtx);
-        //     odomTs = currentTs;
-        // }
         if (currentTs - lastLoopTs > LOOP_TIME_US)
         {
             // drive->setDriveState(10,driveSpeed);
@@ -201,7 +194,7 @@ void core0_main()
             GeometryUtils::Pose current = drive->getPose();
 
             // std::cout << "PoseX:   " << current.x << " PoseY:   " << current.y << std::endl;
-            std::cout<< current.x << "," << current.y <<std::endl;
+            std::cout<< current.x << "," << current.y << "," << GeometryUtils::radToDeg(current.theta) <<std::endl;
             GeometryUtils::Pose dest = purep->getLookAheadPose(current);
             // Pose dest = purep->poseFromPacket(testPath1[index]);
             double heading = purep->getLookAheadHeading(current);
@@ -219,15 +212,7 @@ void core0_main()
             }
             lastLoopTs = currentTs;
         }
-        // if(currentTs - motorLoop > 3500 *1E3){
-        //     // driveSpeed = 0;
-        //     motorLoop = currentTs;
-        // }
-
-        // else
-        // {
-            tight_loop_contents();
-        // }
+        tight_loop_contents();
     }
 }
 

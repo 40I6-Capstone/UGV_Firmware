@@ -38,7 +38,7 @@ bool PICO_IMU::begin()
 double PICO_IMU::getAngle()
 {
     double output;
-    output = GeometryUtils::inputModulus(this->getAngle(),-180,180);
+    output = GeometryUtils::inputModulus(this->angle,-180,180);
     return output;
 }
 
