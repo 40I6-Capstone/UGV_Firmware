@@ -157,7 +157,8 @@ void core0_main()
     // gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
     // purep = new PurePursuit(0.1,drive->getPose(),false);
-    purep = new PurePursuit(0.03,{.x = 0.0, .y = 0.0, .theta = 0.0},false);
+    bool reverse = false;
+    purep = new PurePursuit(0.02,{.x = 0.0, .y = 0.0, .theta = 0.0},reverse);
     // arm = new ServoControl(PIN_SERVO);
 
 
@@ -199,13 +200,16 @@ void core0_main()
             std::cout << "PoseX:   " << testPose.x << " PoseY:   " << testPose.y << std::endl;
             Pose dest = purep->getLookAheadPose(testPose);
             // Pose dest = purep->poseFromPacket(testPath1[index]);
-            std::cout << "TargetX: " << dest.x <<     " TargetY: " << dest.y << " Heading: " << purep->getLookAheadHeading(testPose) << "\n" << std::endl; 
+            double heading = purep->getLookAheadHeading(testPose);
+            std::cout << "TargetX: " << dest.x <<     " TargetY: " << dest.y << " Heading: " << heading  << "\n" << std::endl; 
             // index = (index+1) % 5;
             // Reset timer
-            testPose.x += 0.025;
-            if(testPose.x > 0.55){
+            testPose.x += 0.03*std::cos(DEG_TO_RAD(heading));
+            testPose.y += 0.03*std::sin(DEG_TO_RAD(heading));
+            if(distToPoint(testPose, purep->getLastPose()) < 0.04){
                 std::cout << "PATH DONE" <<std::endl;
-                testPose.y = 0;
+                reverse = !reverse;
+                purep->setReversed(reverse);
             }
             lastLoopTs = currentTs;
         }

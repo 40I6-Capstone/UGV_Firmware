@@ -23,3 +23,5 @@ double inputModulus(double input, double minInput, double maxInput);
 double dotProd(Pose a, Pose b);
 
 Pose relativeTo(Pose base, Pose to);
+
+double flipAngle(double angle);

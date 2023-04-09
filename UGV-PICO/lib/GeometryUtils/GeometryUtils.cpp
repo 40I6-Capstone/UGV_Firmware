@@ -45,3 +45,7 @@ Pose relativeTo(Pose base, Pose to){
 
     return {.x = relativeX, .y = relativeY, .theta = 0};
 }
+
+double flipAngle(double angle){
+    return inputModulus(angle+180, -180, 180);
+}

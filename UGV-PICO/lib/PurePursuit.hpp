@@ -16,6 +16,7 @@ class PurePursuit{
         bool isLookAheadLast();
         Pose poseFromPacket(packet_path_point);
         void setReversed(bool);
+        Pose getLastPose();
 
 
     private:
@@ -98,12 +99,13 @@ void PurePursuit::updateLookAhead(Pose currentPose){
     // Closest point isn't the last point, iterate along the path until a point is larger than lookahead
     int direction = this->isReversed? -1:1;
     Pose closestPose = poseFromPacket(this->path[closestIndex]);
-    for(int i = closestIndex; ((i < this->pathSize-1) && (i >= 0)); i+= direction){
-        Pose testPose = poseFromPacket(this->path[i]);
-        Pose nextTestPose = poseFromPacket(this->path[i+direction]);
+    for(int i = 0; i < abs(closestIndex-getLastIndex()); i++){
+        int checkIndex = i*direction + closestIndex;
+        Pose testPose = poseFromPacket(this->path[checkIndex]);
+        Pose nextTestPose = poseFromPacket(this->path[checkIndex+direction]);
         if(distToPoint(currentPose, testPose) > this->lookAheadDist 
             && dotProd(relativeTo(currentPose,testPose),relativeTo(currentPose,nextTestPose)) > 0.){ 
-            this->nextPoseIndex = i; 
+            this->nextPoseIndex = checkIndex; 
             return;
         }
     }
@@ -149,4 +151,8 @@ Pose PurePursuit::poseFromPacket(packet_path_point packet){
 
 void PurePursuit::setReversed(bool isReversed){
     this->isReversed = isReversed;
+}
+
+Pose PurePursuit::getLastPose(){
+    return poseFromPacket(this->path[getLastIndex()]);
 }
