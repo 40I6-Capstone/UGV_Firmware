@@ -73,10 +73,10 @@ int PurePursuit::getClosestPoseIndex(Pose currentPose){
 */
 void PurePursuit::updateLookAhead(Pose currentPose){
     // Check if next pose is last pose
-    if(isLookAheadLast()){
-        std::cout << " LOOKING AT END" << std::endl;
-        return;
-    }
+    // if(isLookAheadLast()){
+    //     std::cout << " LOOKING AT END" << std::endl;
+    //     return;
+    // }
 
     // Get closest point
     int closestIndex = getClosestPoseIndex(currentPose);

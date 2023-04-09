@@ -113,6 +113,8 @@ void core1_main()
     
     // pathLoader = new PathLoader([](){
     //     std::cout << "Buffer Swapped" << std::endl;
+    //      load path into pure pursuit controller
+    //      use path mutex
     //  });
     // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
     // setupUARTSubscribers();
@@ -155,7 +157,7 @@ void core0_main()
     // gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
 
     // purep = new PurePursuit(0.1,drive->getPose(),false);
-    purep = new PurePursuit(0.1,{.x = 0.0, .y = 0.0, .theta = 0.0},false);
+    purep = new PurePursuit(0.03,{.x = 0.0, .y = 0.0, .theta = 0.0},false);
     // arm = new ServoControl(PIN_SERVO);
 
 
@@ -166,7 +168,7 @@ void core0_main()
     uint64_t odomTs = time_us_64();
 
     static Pose testPose = {.x = 0, .y =0, .theta = 0};
-    static int index = 0;
+    // static int index = 0;
     purep->setPath(testPath1, 5);
     while (1)
     {
@@ -200,8 +202,8 @@ void core0_main()
             std::cout << "TargetX: " << dest.x <<     " TargetY: " << dest.y << " Heading: " << purep->getLookAheadHeading(testPose) << "\n" << std::endl; 
             // index = (index+1) % 5;
             // Reset timer
-            testPose.y += 0.2;
-            if(testPose.y > 2.5){
+            testPose.x += 0.025;
+            if(testPose.x > 0.55){
                 std::cout << "PATH DONE" <<std::endl;
                 testPose.y = 0;
             }
@@ -272,8 +274,13 @@ void robotFSMLoop(){
         case LEAVING:
             // Set claw closed
             // arm->write(CLOSED_POSITION);
+            
+
+            // Check path mutex
             // Check if heading to last point
             // Compute lookahead
+            // Release path mutex
+            // Check if heading is grossly different than target and set V to 0 if necessary first
             // Compute heading and V
             // Command drive
 
@@ -282,8 +289,11 @@ void robotFSMLoop(){
         case RETURNING:
             // Set claw closed
             // arm->write(CLOSED_POSITION);
+            // Check path mutex
             // Check if heading to last point
             // Compute lookahead
+            // Release path mutex
+            // Check if heading is grossly different than target and set V to 0 if necessary first
             // Compute heading and V
             // Command drive
 
