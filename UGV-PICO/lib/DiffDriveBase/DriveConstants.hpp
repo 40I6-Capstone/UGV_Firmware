@@ -10,8 +10,8 @@
 #define KF 1.
 
 
-#define TURN_KP 0.007
-#define TURN_KI 0.0002
+#define TURN_KP 0.0065
+#define TURN_KI 0.0005
 #define TURN_KD 0.0
 
 

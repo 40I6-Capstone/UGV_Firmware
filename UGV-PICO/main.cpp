@@ -212,6 +212,15 @@ void core1_main()
         mutex_exit(&pwrMtx);
         #endif
 
+        double input;
+        std::cin >> input;
+        if((currentState == NODE_IDLE) || (currentState == NODE_STOPPED) ){
+            goFlag = true;
+        }
+        if((currentState == NODE_PATH_LEAVE) || (currentState == NODE_PATH_RETURN)){
+            stopFlag = true;
+        }
+
         // uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
         {
