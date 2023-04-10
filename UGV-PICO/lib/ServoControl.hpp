@@ -4,7 +4,7 @@
 #include <math.h>
 // #include <cmath>
 
-#define PIN_SERVO 22
+// #define PIN_SERVO 22
 
 #define CLOSED_POSITION 100
 #define OPEN_POSITION 800

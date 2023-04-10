@@ -40,7 +40,6 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
     // odom = new DifferentialDriveOdometry(0);
     // std::cout << "Odom Setup" << std::endl;
     this->stop();
-
 }
 
 
