@@ -13,6 +13,8 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
     enc_left->setInverted(false);
     enc_right->setConversionFactor(M_PER_REV);
     enc_left->setConversionFactor(M_PER_REV);
+    // enc_right->setConversionFactor(1);
+    // enc_left->setConversionFactor(1);
 
 
     anglePID = new PIDController(getSysTime);

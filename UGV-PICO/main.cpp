@@ -212,21 +212,6 @@ void core1_main()
         mutex_exit(&pwrMtx);
         #endif
 
-        double kP,kI,kD;
-        std::cin >> kP;
-        std::cin >> kI;
-        std::cin >> kD;
-        drive->setTurnGains(kP,kI,kD);
-        // sleep_ms(2000);
-        if(kP < 0){
-            currentState = NODE_IDLE;
-            drive->stop();
-        } else {
-            drive->setPose({.x = 0 , .y = 0 ,.theta = 0});
-            purep->setPath(testPath2, 56);
-            currentState = NODE_PATH_LEAVE; 
-        }
-
         // uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
         {
