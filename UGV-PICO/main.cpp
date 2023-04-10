@@ -214,14 +214,19 @@ void core1_main()
 
         double input;
         std::cin >> input;
-        if((currentState == NODE_IDLE) || (currentState == NODE_STOPPED) ){
-            goFlag = true;
-        }
-        if((currentState == NODE_PATH_LEAVE) || (currentState == NODE_PATH_RETURN)){
-            stopFlag = true;
+        if(input > 0){
+
+            if((currentState == NODE_IDLE) || (currentState == NODE_STOPPED) ){
+                std::cout << "SENDING GO" << std::endl;
+                goFlag = true;
+            }
+            if((currentState == NODE_PATH_LEAVE) || (currentState == NODE_PATH_RETURN)){
+                std::cout << "SENDING STOP" << std::endl;
+                stopFlag = true;
+            }
         }
 
-        // uart_man->loop();
+            // uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
         {
             gpio_put(PICO_DEFAULT_LED_PIN, pinState);
@@ -235,6 +240,7 @@ void core1_main()
 
 
 void followPath(bool isReversed, GeometryUtils::Pose current){
+    purep->setReversed(isReversed);
     // Check path mutex
     mutex_enter_blocking(&pathMtx);
     // Compute lookahead
@@ -295,7 +301,7 @@ void robotFSMLoop(){
             drive->stop();
 
             if(goFlag){
-                currentState = isFwdFinished? NODE_PATH_LEAVE : NODE_PATH_RETURN;
+                currentState = isFwdFinished? NODE_PATH_RETURN : NODE_PATH_LEAVE;
                 // std::cout << "State: " << currentState <<std::endl;
             }
         break;
@@ -306,8 +312,8 @@ void robotFSMLoop(){
             // Stop Drive
             drive->stop();
             if(goFlag){
-                currentState = isFwdFinished? NODE_PATH_LEAVE : NODE_PATH_RETURN;
-                // std::cout << "State: " << currentState <<std::endl;
+                currentState = isFwdFinished? NODE_PATH_RETURN : NODE_PATH_LEAVE;
+                std::cout << "State: " << currentState <<std::endl;
             }
         break;
 
@@ -317,14 +323,15 @@ void robotFSMLoop(){
 
             if(stopFlag){
                 currentState = NODE_STOPPED;
-                // std::cout << "State: " << currentState <<std::endl;
+                std::cout << "State: " << currentState <<std::endl;
             }
             // Check if at last point
             else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < POSE_TOLERANCE){
-                // std::cout << "LEAVE DONE" <<std::endl;
+                std::cout << "LEAVE DONE" <<std::endl;
                 isFwdFinished = true;
+                purep->setReversed(true);
                 currentState = NODE_IDLE;
-                // std::cout << "State: " << currentState <<std::endl;
+                std::cout << "State: " << currentState <<std::endl;
             } else {
                 followPath(false,current);
             }
@@ -335,13 +342,14 @@ void robotFSMLoop(){
             // arm->write(CLOSED_POSITION);
             if(stopFlag){
                 currentState = NODE_STOPPED;
-                // std::cout << "State: " << currentState <<std::endl;
+                std::cout << "State: " << currentState <<std::endl;
             }
             else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < POSE_TOLERANCE){
-                // std::cout << "RETURN DONE" <<std::endl;
+                std::cout << "RETURN DONE" <<std::endl;
                 isFwdFinished = false;
+                purep->setReversed(false);
                 currentState = NODE_IDLE;
-                // std::cout << "State: " << currentState <<std::endl;
+                std::cout << "State: " << currentState <<std::endl;
             } else {
                followPath(true,current);
             }
