@@ -89,3 +89,7 @@ void PIDController::reset()
     this->lastErr = 0;
     this->lastTs = getSysTime();
 }
+
+double PIDController::getError(){
+    return this->err;
+}

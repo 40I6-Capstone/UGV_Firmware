@@ -10,7 +10,7 @@
 #define KF 1.
 
 
-#define TURN_KP 0.003
+#define TURN_KP 0.001
 #define TURN_KI 0.0
 #define TURN_KD 0.00
 
@@ -18,12 +18,12 @@
 #define RIGHT_KP 4.2
 // #define RIGHT_KP 0.0
 #define RIGHT_KI 0.00
-// #define RIGHT_KD 0.015
-#define RIGHT_KD 0.0
+#define RIGHT_KD 0.015
+// #define RIGHT_KD 0.0
 
 
 #define LEFT_KP 4.2
 // #define LEFT_KP 0.0
 #define LEFT_KI 0.0
-// #define LEFT_KD 0.01
-#define LEFT_KD 0.0
+#define LEFT_KD 0.01
+// #define LEFT_KD 0.0

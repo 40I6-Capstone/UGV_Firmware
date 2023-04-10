@@ -29,5 +29,6 @@ public:
     bool atSetpoint();
     double getOutput();
     void setContinuous(double minInput, double maxInput);
+    double getError();
 };
 

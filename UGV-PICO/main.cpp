@@ -37,9 +37,12 @@
 #include "lib/GeometryUtils/GeometryUtils.hpp"
 
 
-#define MAX_SPEED 0.2 // Max m/s to set motors to
+#define MAX_SPEED 0.18 // Max m/s to set motors to
+#define MIN_SPEED 0.10 // Min m/s to set motors to before sudden stop
 #define RAMP_DOWN_DIST 0.05 // m away from path end to ramp down
-#define LOOP_TIME_US 20 * 1E3
+#define LOOP_TIME_US 10 * 1E3
+#define POSE_TOLERANCE 0.015
+#define PUREP_LOOKAHEAD 0.01
 // #define LOOP_TIME_US 1500 * 1E3
 
 // #define TEST_UART
@@ -234,8 +237,8 @@ void followPath(bool isReversed, GeometryUtils::Pose current){
     // Compute heading and V
     double gain;
     double distToEnd = GeometryUtils::distToPoint(current,purep->getLastPose());
-    if( distToEnd < RAMP_DOWN_DIST){
-        gain = MAX_SPEED * (RAMP_DOWN_DIST - distToEnd);
+    if(distToEnd < RAMP_DOWN_DIST){
+        gain = (MAX_SPEED-MIN_SPEED)/RAMP_DOWN_DIST * distToEnd + MIN_SPEED;
     }else {
         gain = MAX_SPEED;
     }
@@ -251,7 +254,7 @@ void followPath(bool isReversed, GeometryUtils::Pose current){
     std::cout<< current.x << "," << current.y << "," << GeometryUtils::radToDeg(current.theta)
     #endif 
     #if defined PRNT_TARGET && defined PRNT_POSE_CSV
-    << "," << dest.x <<"," << dest.y << "," << heading << "," << v 
+    << "," << dest.x <<"," << dest.y << "," << heading << "," << v << "," << distToEnd
     #endif
 
     #if defined PRNT_POSE_CSV
@@ -303,7 +306,7 @@ void robotFSMLoop(){
                 std::cout << "State: " << currentState <<std::endl;
             }
             // Check if at last point
-            else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < 0.01){
+            else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < POSE_TOLERANCE){
                 std::cout << "LEAVE DONE" <<std::endl;
                 isFwdFinished = true;
                 currentState = NODE_IDLE;
@@ -320,7 +323,7 @@ void robotFSMLoop(){
                 currentState = NODE_STOPPED;
                 std::cout << "State: " << currentState <<std::endl;
             }
-            else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < 0.01){
+            else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < POSE_TOLERANCE){
                 std::cout << "RETURN DONE" <<std::endl;
                 isFwdFinished = false;
                 currentState = NODE_IDLE;
@@ -343,7 +346,7 @@ void core0_main()
     drive = new DifferentialDrive(getSysTime);
     gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
     std::cout << "Drive Setup" << std::endl;
-    purep = new PurePursuit(0.01,drive->getPose(),false);
+    purep = new PurePursuit(PUREP_LOOKAHEAD,drive->getPose(),false);
     bool reverse = false;
     // purep = new PurePursuit(0.01,{.x = 0.0, .y = 0.0, .theta = 0.0},reverse);
     std::cout << "PurePursuit Setup" << std::endl;

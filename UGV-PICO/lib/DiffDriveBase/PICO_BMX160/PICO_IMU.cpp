@@ -22,17 +22,18 @@ bool PICO_IMU::begin()
     this->lastTimeStamp = time_us_64();
     bool gyroStarted = this->imu->begin();
     this->imu->setGyroRange(eGyroRange_2000DPS);
-    bool timerStarted = add_repeating_timer_ms(
-                                     -10,
-                                     [](struct repeating_timer *t) -> bool
-                                     {
-                                         PICO_IMU *imu = (PICO_IMU *)(t->user_data);
-                                         imu->update();
-                                         return true;
-                                     },
-                                     this,
-                                     &(this->updateTimer));
-    return gyroStarted && timerStarted;
+    // bool timerStarted = add_repeating_timer_ms(
+    //                                  -10,
+    //                                  [](struct repeating_timer *t) -> bool
+    //                                  {
+    //                                      PICO_IMU *imu = (PICO_IMU *)(t->user_data);
+    //                                      imu->update();
+    //                                      return true;
+    //                                  },
+    //                                  this,
+    //                                  &(this->updateTimer));
+    // return gyroStarted && timerStarted;
+    return gyroStarted;
 }
 
 double PICO_IMU::getAngle()

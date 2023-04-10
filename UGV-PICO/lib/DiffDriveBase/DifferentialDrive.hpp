@@ -54,7 +54,6 @@ public:
     void resetControllers();
     void stop();
     double distanceToPoint(GeometryUtils::Pose);
-
     
     GeometryUtils::Pose getPose();
     void setPose(GeometryUtils::Pose newPose);
