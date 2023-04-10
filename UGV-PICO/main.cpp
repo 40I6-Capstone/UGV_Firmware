@@ -43,10 +43,10 @@
 // #define LOOP_TIME_US 1500 * 1E3
 
 // #define TEST_UART
-#define EN_TIMEOUT
-// #define PWR_TEST
-#define PRNT_POSE_CSV
-#define PRNT_TARGET
+// #define EN_TIMEOUT
+#define PWR_TEST
+// #define PRNT_POSE_CSV
+// #define PRNT_TARGET
 
 UARTManager *uart_man;
 DifferentialDrive *drive;
@@ -201,8 +201,8 @@ void core1_main()
         std::cin >> spd;
         std::cout << " right: " << right << " left: " << left  << " speed: " << spd <<  std::endl;
         mutex_enter_blocking(&pwrMtx);
-        drive->setLeftGains(0, left, 0);
-        drive->setRightGains(0, right, 0);
+        // drive->setLeftGains(0, left, 0); 
+        // drive->setRightGains(0, right, 0);
         driveSpeed = spd;
         drive->resetControllers();
         mutex_exit(&pwrMtx);
@@ -370,10 +370,10 @@ void core0_main()
             // drive->setDriveState(10,driveSpeed);
             #ifdef PWR_TEST
             mutex_enter_timeout_ms(&pwrMtx,10);
-            drive->setLeftV(driveSpeed);
-            drive->setRightV(driveSpeed);
-            // drive->setLeft(driveSpeed);
-            // drive->setRight(driveSpeed);
+            // drive->setLeftV(driveSpeed);
+            // drive->setRightV(driveSpeed);
+            drive->setLeft(driveSpeed);
+            drive->setRight(driveSpeed);
             std::cout << drive->getVRight() << "," << drive->getVLeft() << ","<< driveSpeed << std::endl;
             mutex_exit(&pwrMtx);
             #endif
@@ -390,7 +390,7 @@ void core0_main()
                 // reverse = !reverse;
                 // purep->setReversed(reverse);
 
-            robotFSMLoop();
+            // robotFSMLoop();
 
             lastLoopTs = currentTs;
         }
