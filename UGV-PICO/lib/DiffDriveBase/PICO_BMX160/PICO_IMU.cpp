@@ -4,7 +4,11 @@ PICO_IMU::PICO_IMU(i2c_inst_t *i2c, uint sda, uint scl)
 {
     this->angle = 0;
     this->staticDeadband = 0.01;//0.0609756;
+    #if defined UGV_ID_1
     this->driftOffset = 0.0609756;
+    #elif defined UGV_ID_2
+    this->driftOffset = 0.609756
+    #endif
     this->imu = new DFRobot_BMX160(i2c, sda, scl);
     this->inverted = false;
     this->filt = new MedianFilt<double, FILT_SIZE>();

@@ -18,6 +18,9 @@ add_subdirectory(lib/GeometryUtils)
 add_subdirectory(lib/DiffDriveBase)
 add_subdirectory(lib/SlewRateLimiter)
 
+add_compile_definitions(UGV_ID_2)
+# add_compile_definitions(UGV_ID_1)
+
 add_executable(ugv_firm
 	main.cpp
 	)

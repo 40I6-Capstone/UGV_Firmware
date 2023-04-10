@@ -432,7 +432,7 @@
 #define BMX160_FIFO_HEAD_M_G_A 0x9C
 
 /** FIFO sensor time length definitions */
-#define BMX160_SENSOR_TIME_LENGTH         3)
+#define BMX160_SENSOR_TIME_LENGTH 3
 
 /** FIFO DOWN selection */
 /* Accel fifo down-sampling values*/
