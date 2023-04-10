@@ -44,7 +44,7 @@
 
 // #define TEST_UART
 // #define EN_TIMEOUT
-// #define PWR_TEST
+#define PWR_TEST
 // #define PRNT_POSE_CSV
 // #define PRNT_TARGET
 

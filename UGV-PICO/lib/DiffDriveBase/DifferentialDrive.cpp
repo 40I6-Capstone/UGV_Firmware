@@ -11,10 +11,10 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
     this->enc_left = new QuadEncoder(PIN_ENC_LA, PIN_ENC_LB);
     enc_right->setInverted(false);
     enc_left->setInverted(false);
-    // enc_right->setConversionFactor(M_PER_REV);
-    // enc_left->setConversionFactor(M_PER_REV);
-enc_right->setConversionFactor(1);
-    enc_left->setConversionFactor(1);
+    enc_right->setConversionFactor(M_PER_REV);
+    enc_left->setConversionFactor(M_PER_REV);
+// enc_right->setConversionFactor(1);
+    // enc_left->setConversionFactor(1);
 
     anglePID = new PIDController(getSysTime);
     anglePID->setGains(TURN_KP,TURN_KI,TURN_KD);
@@ -56,7 +56,7 @@ void DifferentialDrive::update()
 {
     odom->update(enc_right->getPosition(), enc_left->getPosition(), GeometryUtils::degToRad(imu->getAngle()));
     // std::cout << "Gyro: " << imu->getAngle() << std::endl;
-    std::cout << "EncR: " << enc_right->getPosition() << " EncL: " << enc_left->getPosition() << std::endl;
+    // std::cout << "EncR: " << enc_right->getPosition() << " EncL: " << enc_left->getPosition() << std::endl;
     // Pose currentPose = odom->getCurrentPose();
     // std::cout << "Pose: " << currentPose.x << " " << currentPose.y << " " << RAD_TO_DEG(currentPose.theta) << " " << std::endl;
 }
