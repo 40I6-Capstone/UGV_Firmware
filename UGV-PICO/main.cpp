@@ -374,7 +374,7 @@ void core0_main()
             // drive->setRightV(driveSpeed);
             drive->setLeft(driveSpeed);
             drive->setRight(driveSpeed);
-            std::cout << drive->getVRight() << "," << drive->getVLeft() << ","<< driveSpeed << "," << drive->getDistRight() << "," << drive->getDistLeft() <<std::endl;
+            std::cout << drive->getVRight() << "," << drive->getVLeft() << ","<< driveSpeed << "," << drive->getDistRight() << "," << drive->getDistLeft() << "," << drive->getAngle()<<std::endl;
             mutex_exit(&pwrMtx);
             #endif
 
