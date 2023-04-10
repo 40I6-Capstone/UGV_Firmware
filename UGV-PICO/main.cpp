@@ -44,7 +44,7 @@
 
 // #define TEST_UART
 // #define EN_TIMEOUT
-#define PWR_TEST
+// #define PWR_TEST
 // #define PRNT_POSE_CSV
 // #define PRNT_TARGET
 
@@ -379,9 +379,10 @@ void core0_main()
             #endif
 
             // std::cout << "Theta: " << RAD_TO_DEG(drive->getPose().theta)
+            std::cout << "Angle: " << (drive->getAngle())
             // << " X:     " << drive->getPose().x 
             // << " Y:     " << drive->getPose().y
-            // << std::endl;
+            << std::endl;
             
             // index = (index+1) % 5;
             // Reset timer

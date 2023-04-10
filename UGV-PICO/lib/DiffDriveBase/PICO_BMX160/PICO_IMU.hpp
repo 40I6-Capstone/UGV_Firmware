@@ -4,7 +4,7 @@
 #include "../MemoryFilter/FIRFilt/FIRFilt.hpp"
 #include "../../GeometryUtils/GeometryUtils.hpp"
 
-#define FILT_SIZE 3
+#define FILT_SIZE 5
 #define FILTB_SIZE 1
 
 class PICO_IMU

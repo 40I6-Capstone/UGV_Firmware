@@ -1,10 +1,15 @@
 #include "PICO_IMU.hpp"
-
+#define UGV_ID_2
 PICO_IMU::PICO_IMU(i2c_inst_t *i2c, uint sda, uint scl)
 {
     this->angle = 0;
-    this->staticDeadband = 0.01;//0.0609756;
+    #if defined UGV_ID_1
     this->driftOffset = 0.0609756;
+    this->staticDeadband = 0.01;//0.0609756;
+    #elif defined UGV_ID_2
+    this->driftOffset = 0.0609756*9.5;
+    this->staticDeadband = 0.0609756;
+    #endif
     this->imu = new DFRobot_BMX160(i2c, sda, scl);
     this->inverted = false;
     this->filt = new MedianFilt<double, FILT_SIZE>();
@@ -42,26 +47,20 @@ double PICO_IMU::getAngle()
     return output;
 }
 
-void PICO_IMU::setInverted(bool isInverted)
-{
-    this->inverted = isInverted;
-}
+void PICO_IMU::setInverted(bool isInverted){ this->inverted = isInverted; }
 
 /**
  * @brief update the minimum threshold that the gyro needs to report to increment angle
  *
  * @param deadband deg/s
  */
-void PICO_IMU::setDeadband(double deadband)
-{
-    this->staticDeadband = deadband;
-}
+void PICO_IMU::setDeadband(double deadband){ this->staticDeadband = deadband; }
 
 void PICO_IMU::update()
 {
     sBmx160SensorData_t gyroData;
     this->imu->getAllData(NULL, &gyroData, NULL);
-    std::cout << "Gyro:  " << gyroData.z << std::endl;
+    // std::cout << "Gyro:  " << gyroData.z << std::endl;
     this->filt->update(gyroData.z - (gyroData.z > 0 ? this->driftOffset : 0));
     double filteredOmega = this->filt->getOutput();
     // std::cout << "Filt:  " << filteredOmega << std::endl;

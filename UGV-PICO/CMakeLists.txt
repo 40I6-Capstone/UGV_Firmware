@@ -16,6 +16,7 @@ pico_sdk_init()
 # add_subdirectory(lib/DiffDriveOdom)
 add_subdirectory(lib/GeometryUtils)
 add_subdirectory(lib/DiffDriveBase)
+# add_compile_definitions(UGV_ID_2)
 
 add_executable(ugv_firm
 	main.cpp
