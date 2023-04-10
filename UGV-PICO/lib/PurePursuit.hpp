@@ -17,6 +17,7 @@ class PurePursuit{
         GeometryUtils::Pose poseFromPacket(packet_path_point);
         void setReversed(bool);
         GeometryUtils::Pose getLastPose();
+        
 
 
     private:

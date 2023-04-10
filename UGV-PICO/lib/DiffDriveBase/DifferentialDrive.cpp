@@ -30,13 +30,13 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
     this->imu = new PICO_IMU(I2C_INST, PIN_SDA, PIN_SCL);
     bool imuSetupSuccess;
     imuSetupSuccess = imu->begin();
-    std::cout << (imuSetupSuccess ? "IMU Setup Success" : "IMU Setup Fail") << std::endl;
+    // std::cout << (imuSetupSuccess ? "IMU Setup Success" : "IMU Setup Fail") << std::endl;
     sleep_ms(100);
     imu->update();
-    std::cout << "IMU updated" << std::endl;
+    // std::cout << "IMU updated" << std::endl;
     odom = new DifferentialDriveOdometry(GeometryUtils::degToRad(imu->getAngle()));
     // odom = new DifferentialDriveOdometry(0);
-    std::cout << "Odom Setup" << std::endl;
+    // std::cout << "Odom Setup" << std::endl;
 
 }
 
@@ -117,12 +117,12 @@ void DifferentialDrive::setDriveState(double heading, double v){
     double angleOffset =this->anglePID->calculate(heading,this->getAngle());
     double angleErr = abs(this->anglePID->getError());
     double bias;
-    // if(angleErr > 60.){
+    // if(angleErr > 30.){
         // bias = 0;
     // }else {
-        // bias = ((180.-abs(this->anglePID->getError()))/180.);
+        bias = ((180.-abs(this->anglePID->getError()))/180.);
     // }
-    bias = 1.0;
+    // bias = 1.0;
     double rightOut = bias*v + angleOffset;
     double leftOut = bias*v - angleOffset;
     // Clamp outputs

@@ -37,12 +37,12 @@
 #include "lib/GeometryUtils/GeometryUtils.hpp"
 
 
-#define MAX_SPEED 0.18 // Max m/s to set motors to
+#define MAX_SPEED 0.13 // Max m/s to set motors to
 #define MIN_SPEED 0.10 // Min m/s to set motors to before sudden stop
 #define RAMP_DOWN_DIST 0.05 // m away from path end to ramp down
-#define LOOP_TIME_US 10 * 1E3
-#define POSE_TOLERANCE 0.015
-#define PUREP_LOOKAHEAD 0.01
+#define LOOP_TIME_US 20 * 1E3
+#define POSE_TOLERANCE 0.03
+#define PUREP_LOOKAHEAD 0.1
 // #define LOOP_TIME_US 1500 * 1E3
 
 // #define TEST_UART
@@ -180,10 +180,10 @@ auto_init_mutex(pwrMtx);
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
 {
-    std::cout << "Core 1 begin" << std::endl;
+    // std::cout << "Core 1 begin" << std::endl;
     
     pathLoader = new PathLoader([](){
-        std::cout << "Buffer Swapped" << std::endl;
+        // std::cout << "Buffer Swapped" << std::endl;
         //  use path mutex
         mutex_enter_blocking(&pathMtx);
         //  load path into pure pursuit controller
@@ -217,12 +217,13 @@ void core1_main()
         std::cin >> kI;
         std::cin >> kD;
         drive->setTurnGains(kP,kI,kD);
-        sleep_ms(2000);
-        if(kD < 0){
+        // sleep_ms(2000);
+        if(kP < 0){
             currentState = NODE_IDLE;
             drive->stop();
         } else {
             drive->setPose({.x = 0 , .y = 0 ,.theta = 0});
+            purep->setPath(testPath2, 56);
             currentState = NODE_PATH_LEAVE; 
         }
 
@@ -257,8 +258,13 @@ void followPath(bool isReversed, GeometryUtils::Pose current){
         gain = MAX_SPEED;
     }
 
-    double v = gain * (isReversed? -1. : 1.);
     double heading = purep->getLookAheadHeading(current);
+
+    // bool isOvershoot =  (180. - abs(heading)) < 45.;
+
+    double v = gain * (isReversed? -1. : 1.);
+
+    // if(isReversed || isOvershoot){
     if(isReversed){
         heading = GeometryUtils::flipAngle(heading);
     }
@@ -296,7 +302,7 @@ void robotFSMLoop(){
 
             if(goFlag){
                 currentState = isFwdFinished? NODE_PATH_LEAVE : NODE_PATH_RETURN;
-                std::cout << "State: " << currentState <<std::endl;
+                // std::cout << "State: " << currentState <<std::endl;
             }
         break;
 
@@ -307,7 +313,7 @@ void robotFSMLoop(){
             drive->stop();
             if(goFlag){
                 currentState = isFwdFinished? NODE_PATH_LEAVE : NODE_PATH_RETURN;
-                std::cout << "State: " << currentState <<std::endl;
+                // std::cout << "State: " << currentState <<std::endl;
             }
         break;
 
@@ -317,14 +323,14 @@ void robotFSMLoop(){
 
             if(stopFlag){
                 currentState = NODE_STOPPED;
-                std::cout << "State: " << currentState <<std::endl;
+                // std::cout << "State: " << currentState <<std::endl;
             }
             // Check if at last point
             else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < POSE_TOLERANCE){
-                std::cout << "LEAVE DONE" <<std::endl;
+                // std::cout << "LEAVE DONE" <<std::endl;
                 isFwdFinished = true;
                 currentState = NODE_IDLE;
-                std::cout << "State: " << currentState <<std::endl;
+                // std::cout << "State: " << currentState <<std::endl;
             } else {
                 followPath(false,current);
             }
@@ -335,13 +341,13 @@ void robotFSMLoop(){
             // arm->write(CLOSED_POSITION);
             if(stopFlag){
                 currentState = NODE_STOPPED;
-                std::cout << "State: " << currentState <<std::endl;
+                // std::cout << "State: " << currentState <<std::endl;
             }
             else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < POSE_TOLERANCE){
-                std::cout << "RETURN DONE" <<std::endl;
+                // std::cout << "RETURN DONE" <<std::endl;
                 isFwdFinished = false;
                 currentState = NODE_IDLE;
-                std::cout << "State: " << currentState <<std::endl;
+                // std::cout << "State: " << currentState <<std::endl;
             } else {
                followPath(true,current);
             }
@@ -359,25 +365,25 @@ void core0_main()
 
     drive = new DifferentialDrive(getSysTime);
     gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
-    std::cout << "Drive Setup" << std::endl;
+    // std::cout << "Drive Setup" << std::endl;
     purep = new PurePursuit(PUREP_LOOKAHEAD,drive->getPose(),false);
     bool reverse = false;
     // purep = new PurePursuit(0.01,{.x = 0.0, .y = 0.0, .theta = 0.0},reverse);
-    std::cout << "PurePursuit Setup" << std::endl;
+    // std::cout << "PurePursuit Setup" << std::endl;
     // arm = new ServoControl(PIN_SERVO);
 
 
 
     sleep_ms(2000);
-    std::cout << "Core 0 begin" << std::endl;
+    // std::cout << "Core 0 begin" << std::endl;
     uint64_t lastLoopTs = time_us_64();
     #ifdef EN_TIMEOUT
     uint64_t timeoutTs = time_us_64();
     #endif
     // static Pose testPose = {.x = 0, .y =0, .theta = 0};
     // static int index = 0;
-    purep->setPath(testPath1, 5);
-    // purep->setPath(testPath2, 26);
+    // purep->setPath(testPath1, 5);
+    purep->setPath(testPath2, 56);
     currentState = NODE_PATH_LEAVE;
     while (1)
     {
@@ -437,7 +443,7 @@ int main()
     // Wait until USB is connected before doing anything else
     while (!stdio_usb_connected())
         tight_loop_contents();
-    printf("USB CONNECTED\n");
+    // printf("USB CONNECTED\n");
 
     /******* INITIALIZE HARDWARE COMMON TO EACH CORE *******/
 

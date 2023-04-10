@@ -49,7 +49,7 @@ double PIDController::calculate(double setpoint, double measurement)
     if(this->isContinuous){
         double errorBound = (this->maxInput - this->minInput)/2.;
         this->err = GeometryUtils::inputModulus(setpoint - measurement, -errorBound, errorBound);
-        std::cout << "Cont error: " << this->err << std::endl;
+        // std::cout << "Cont error: " << this->err << std::endl;
     } else {
         this->err = setpoint - measurement;
     }
