@@ -61,7 +61,7 @@ void PICO_IMU::update()
 {
     sBmx160SensorData_t gyroData;
     this->imu->getAllData(NULL, &gyroData, NULL);
-    // std::cout << "Gyro:  " << gyroData.z << std::endl;
+    std::cout << "Gyro:  " << gyroData.z << std::endl;
     this->filt->update(gyroData.z - (gyroData.z > 0 ? this->driftOffset : 0));
     double filteredOmega = this->filt->getOutput();
     // std::cout << "Filt:  " << filteredOmega << std::endl;
