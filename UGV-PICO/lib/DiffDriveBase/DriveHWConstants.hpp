@@ -34,3 +34,5 @@
 #define PIN_LED_R 20
 #define PIN_LED_G 19
 #define PIN_LED_B 18
+
+#define PIN_SERVO 21

@@ -31,7 +31,7 @@ ServoControl::ServoControl(uint pin)
     write(OPEN_POSITION);
 }
 
-
+// From 0-1000
 void ServoControl::write(uint16_t level)
 {
     uint slice = pwm_gpio_to_slice_num(pin);
