@@ -2,18 +2,21 @@
 
 PIDController::PIDController(double (*getSysTime)())
 {
-    this->err = 0;
-    this->lastErr = 0;
-    this->errSum = 0;
-    this->kP = 0;
-    this->kI = 0;
-    this->kD = 0;
-    this->kF = 0;
-    this->threshold = 0;
-    this->output = 0;
-    this->setpoint = 0;
+    this->err = 0.;
+    this->lastErr = 0.;
+    this->errSum = 0.;
+    this->kP = 0.;
+    this->kI = 0.;
+    this->kD = 0.;
+    this->kF = 0.;
+    this->threshold = 0.;
+    this->output = 0.;
+    this->setpoint = 0.;
     this->getSysTime = getSysTime;
     this->lastTs = this->getSysTime();
+    this->isContinuous = false;
+    this->minInput = 0.;
+    this->maxInput = 0.;
     this->reset();
 }
 
@@ -46,6 +49,7 @@ double PIDController::calculate(double setpoint, double measurement)
     if(this->isContinuous){
         double errorBound = (this->maxInput - this->minInput)/2.;
         this->err = GeometryUtils::inputModulus(setpoint - measurement, -errorBound, errorBound);
+        std::cout << "Cont error: " << this->err << std::endl;
     } else {
         this->err = setpoint - measurement;
     }

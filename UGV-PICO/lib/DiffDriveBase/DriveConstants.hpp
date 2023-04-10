@@ -1,5 +1,5 @@
 #include <math.h>
-#define WHEEL_DIA 0.075 // 7.5 cm
+#define WHEEL_DIA  0.08//0.075 // 7.5 cm
 
 #define WHEEL_CIRCUMFERENCE WHEEL_DIA*M_PI //3.14159265358979
 
@@ -10,9 +10,9 @@
 #define KF 1.
 
 
-#define TURN_KP 0.001
-#define TURN_KI 0.0
-#define TURN_KD 0.00
+#define TURN_KP 0.002
+#define TURN_KI 0.00
+#define TURN_KD 0.0000
 
 
 #define RIGHT_KP 4.2

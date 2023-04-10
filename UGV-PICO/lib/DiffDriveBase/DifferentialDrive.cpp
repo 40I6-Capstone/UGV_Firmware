@@ -18,6 +18,7 @@ DifferentialDrive::DifferentialDrive(double(*getSysTime)())
     anglePID = new PIDController(getSysTime);
     anglePID->setGains(TURN_KP,TURN_KI,TURN_KD);
     anglePID->setContinuous(-180.,180.);
+    angleSlewLimiter = new SlewRateLimiter(MAX_ANGLE_SLEW, getSysTime);
 
     leftPID = new PIDController(getSysTime);
     leftPID->setGains(LEFT_KP,LEFT_KI,LEFT_KD);
@@ -107,12 +108,26 @@ void DifferentialDrive::setRightGains(double kP, double kI, double kD){
     this->rightPID->setGains(kP,kI,kD);
 }
 
+void DifferentialDrive::setTurnGains(double kP, double kI, double kD){
+    this->anglePID->setGains(kP,kI,kD);
+}
 
 void DifferentialDrive::setDriveState(double heading, double v){
-    double angleOffset = this->anglePID->calculate(heading,this->getAngle());
-    double bias = (abs(this->anglePID->getError())/180.)
-    setRightV(v + angleOffset);
-    setLeftV(v - angleOffset);
+    // double angleOffset = angleSlewLimiter->calculate(this->anglePID->calculate(heading,this->getAngle()));
+    double angleOffset =this->anglePID->calculate(heading,this->getAngle());
+    double angleErr = abs(this->anglePID->getError());
+    double bias;
+    // if(angleErr > 60.){
+        // bias = 0;
+    // }else {
+        // bias = ((180.-abs(this->anglePID->getError()))/180.);
+    // }
+    bias = 1.0;
+    double rightOut = bias*v + angleOffset;
+    double leftOut = bias*v - angleOffset;
+    // Clamp outputs
+    setRightV(rightOut);
+    setLeftV(leftOut);
 }
 
 

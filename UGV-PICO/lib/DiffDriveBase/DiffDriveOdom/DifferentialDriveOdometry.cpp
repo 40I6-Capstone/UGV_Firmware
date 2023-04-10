@@ -27,7 +27,7 @@ GeometryUtils::Pose DifferentialDriveOdometry::update(double distR, double distL
 {
     // Change in robot heading
     double angle = angleRad - this->initialAngle;    // remove initial offset
-    double dTheta = angle - this->currentPose.theta; // comupte change since last update
+    double dTheta = angle - this->currentPose.theta; // compute change since last update
 
     // Computing translational vector in local co-ords
     double deltaRight = distR - this->distR;

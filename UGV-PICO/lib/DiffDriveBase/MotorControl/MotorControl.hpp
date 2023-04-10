@@ -4,7 +4,7 @@
 #include <math.h>
 // #include <cmath>
 
-#define MOTOR_DEADBAND 0.05
+#define MOTOR_DEADBAND 0.0001
 
 class MotorControl
 {

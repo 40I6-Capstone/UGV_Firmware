@@ -1,3 +1,3 @@
 add_library(geometry_utils GeometryUtils.hpp GeometryUtils.cpp)
 
-# target_link_libraries(geometry_utils)
+target_link_libraries(geometry_utils)

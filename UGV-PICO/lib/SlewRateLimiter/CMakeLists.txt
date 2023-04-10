@@ -1,0 +1,3 @@
+add_library(slew_limiter SlewRateLimiter.hpp SlewRateLimiter.cpp)
+
+target_link_libraries(slew_limiter)

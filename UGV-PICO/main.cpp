@@ -46,7 +46,8 @@
 // #define LOOP_TIME_US 1500 * 1E3
 
 // #define TEST_UART
-#define EN_TIMEOUT
+// #define EN_TIMEOUT
+#define TIMEOUT_US 12*1E6
 // #define PWR_TEST
 #define PRNT_POSE_CSV
 #define PRNT_TARGET
@@ -211,6 +212,19 @@ void core1_main()
         mutex_exit(&pwrMtx);
         #endif
 
+        double kP,kI,kD;
+        std::cin >> kP;
+        std::cin >> kI;
+        std::cin >> kD;
+        drive->setTurnGains(kP,kI,kD);
+        sleep_ms(2000);
+        if(kD < 0){
+            currentState = NODE_IDLE;
+            drive->stop();
+        } else {
+            drive->setPose({.x = 0 , .y = 0 ,.theta = 0});
+            currentState = NODE_PATH_LEAVE; 
+        }
 
         // uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
@@ -398,7 +412,7 @@ void core0_main()
             lastLoopTs = currentTs;
         }
         #ifdef EN_TIMEOUT
-        if(currentTs - timeoutTs > 6*1E6){
+        if(currentTs - timeoutTs > TIMEOUT_US){
             currentState = NODE_IDLE;
             std::cout << "State: " << currentState <<std::endl;
             drive->stop();

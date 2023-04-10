@@ -8,4 +8,4 @@ add_subdirectory(MotorControl)
 add_library(diff_drive DifferentialDrive.hpp DifferentialDrive.cpp)
 
 
-target_link_libraries(diff_drive geometry_utils diff_drive_odom pico_bmx160 pid_controller motor_control quad_enc hardware_pwm hardware_gpio pico_stdlib )
+target_link_libraries(diff_drive geometry_utils slew_limiter diff_drive_odom pico_bmx160 pid_controller motor_control quad_enc hardware_pwm hardware_gpio pico_stdlib )

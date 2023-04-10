@@ -9,10 +9,12 @@
 #include "DriveHWConstants.hpp"
 #include <cmath>
 #include "../GeometryUtils/GeometryUtils.hpp"
+#include "../SlewRateLimiter/SlewRateLimiter.hpp"
 
 #define LEFT_FF(x) (-0.8458*std::pow(x,3) + 4.6697*std::pow(x,2) - 0.2236*x + 0.0517)
 #define RIGHT_FF(x) (2.1134*std::pow(x,3) + 1.9547*std::pow(x,2) + 0.2369*x + 0.0479)
 
+#define MAX_ANGLE_SLEW 0.1
 
 class DifferentialDrive
 {
@@ -28,6 +30,7 @@ private:
     DifferentialDriveOdometry *odom;
 
     PIDController *anglePID;
+    SlewRateLimiter *angleSlewLimiter;
     PIDController *leftPID;
     PIDController *rightPID;
 
@@ -51,6 +54,7 @@ public:
     void setDriveState(double theta, double v);
     void setLeftGains(double kP, double kI, double kD);
     void setRightGains(double kP, double kI, double kD);
+    void setTurnGains(double kP, double kI, double kD);
     void resetControllers();
     void stop();
     double distanceToPoint(GeometryUtils::Pose);
