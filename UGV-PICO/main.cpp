@@ -49,14 +49,15 @@
 // #define EN_TIMEOUT
 #define TIMEOUT_US 12*1E6
 // #define PWR_TEST
-#define PRNT_POSE_CSV
-#define PRNT_TARGET
+// #define PRNT_POSE_CSV
+// #define PRNT_TARGET
+#define SERVO_TEST
 
 UARTManager *uart_man;
 DifferentialDrive *drive;
 PathLoader *pathLoader;
 PurePursuit *purep;
-// ServoControl *arm;
+ServoControl *arm;
 
 double getSysTime(){
     return double(time_us_64()) / 1E6;
@@ -185,6 +186,9 @@ double driveSpeed = 0;
 auto_init_mutex(pwrMtx);
 #endif
 
+#ifdef SERVO_TEST
+double servoSetpoint = 0;
+#endif
 
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
@@ -228,6 +232,7 @@ void core1_main()
         mutex_exit(&pwrMtx);
         #endif
 
+<<<<<<< HEAD
         // double input;
         // std::cin >> input;
         // if(input > 0){
@@ -241,6 +246,27 @@ void core1_main()
         //         stopFlag = true;
         //     }
         // }
+=======
+        #ifdef STOP_START_TEST
+        double input;
+        std::cin >> input;
+        if(input > 0){
+
+            if((currentState == NODE_IDLE) || (currentState == NODE_STOPPED) ){
+                std::cout << "SENDING GO" << std::endl;
+                goFlag = true;
+            }
+            if((currentState == NODE_PATH_LEAVE) || (currentState == NODE_PATH_RETURN)){
+                std::cout << "SENDING STOP" << std::endl;
+                stopFlag = true;
+            }
+        }
+        #endif
+
+        #ifdef SERVO_TEST
+        std::cin >> servoSetpoint;
+        #endif
+>>>>>>> 125ac3f (pre test)
 
         uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
@@ -388,7 +414,7 @@ void core0_main()
     bool reverse = false;
     // purep = new PurePursuit(0.01,{.x = 0.0, .y = 0.0, .theta = 0.0},reverse);
     // std::cout << "PurePursuit Setup" << std::endl;
-    // arm = new ServoControl(PIN_SERVO);
+    arm = new ServoControl(PIN_SERVO);
 
 
 
@@ -434,10 +460,14 @@ void core0_main()
 
             // robotFSMLoop();
 
+<<<<<<< HEAD
             mutex_enter_blocking(&poseMtx);
             drive->update();
             // GeometryUtils::Pose current = drive->getPose();
             mutex_exit(&poseMtx);
+=======
+            arm->write((uint16_t)servoSetpoint);
+>>>>>>> 125ac3f (pre test)
 
             lastLoopTs = currentTs;
         }
