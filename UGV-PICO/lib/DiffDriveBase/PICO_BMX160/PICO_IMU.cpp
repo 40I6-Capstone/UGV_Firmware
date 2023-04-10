@@ -83,7 +83,7 @@ void PICO_IMU::update()
         this->angle = (this->angle + dTheta);
     }
     this->lastTimeStamp = time_us_64();
-    std::cout << gyroData.z << "," << dbOut << "," <<filteredOmega << "," << this->angle << std::endl;
+    // std::cout << gyroData.z << "," << dbOut << "," <<filteredOmega << "," << this->angle << std::endl;
 }
 
 template <typename T> int sgn(T val) {
