@@ -80,7 +80,6 @@ typedef struct
 typedef struct 
 {
     char code = PACKET_DIAG_STATE;
-    uint64_t ts_ms; // Timestamp in ms
     double v_right; // current velocity of the right motor
     double d_right; // cumulative distance the right motor has traveled since time 0
     double v_left; // current velocity of the left motor

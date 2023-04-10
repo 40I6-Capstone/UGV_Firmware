@@ -44,7 +44,7 @@ void MotorControl::set(double output)
 
     bool reverseOutput = (this->reverse * out) > 0;
 
-    if (output == 0.0)
+    if (abs(output) < MOTOR_DEADBAND)
     {
         writePin(pinA, 0);
         writePin(pinB, 0);

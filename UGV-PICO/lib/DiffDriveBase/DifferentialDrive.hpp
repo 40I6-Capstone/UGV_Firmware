@@ -10,6 +10,9 @@
 #include <cmath>
 #include "../GeometryUtils/GeometryUtils.hpp"
 
+#define LEFT_FF(x) (-0.8458*std::pow(x,3) + 4.6697*std::pow(x,2) - 0.2236*x + 0.0517)
+#define RIGHT_FF(x) (2.1134*std::pow(x,3) + 1.9547*std::pow(x,2) + 0.2369*x + 0.0479)
+
 
 class DifferentialDrive
 {
@@ -28,7 +31,8 @@ private:
     PIDController *leftPID;
     PIDController *rightPID;
 
-    double getFF(double setpoint);
+    double getRightFF(double setpoint);
+    double getLeftFF(double setpoint);
 
 public:
     DifferentialDrive(double(*getSysTime)());

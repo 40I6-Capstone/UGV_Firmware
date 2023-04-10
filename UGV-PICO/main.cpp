@@ -37,15 +37,20 @@
 #include "lib/GeometryUtils/GeometryUtils.hpp"
 
 
-
+#define MAX_SPEED 0.2 // Max m/s to set motors to
+#define RAMP_DOWN_DIST 0.05 // m away from path end to ramp down
 #define LOOP_TIME_US 20 * 1E3
 // #define LOOP_TIME_US 1500 * 1E3
 
 // #define TEST_UART
+#define EN_TIMEOUT
+// #define PWR_TEST
+#define PRNT_POSE_CSV
+#define PRNT_TARGET
 
-// UARTManager *uart_man;
+UARTManager *uart_man;
 DifferentialDrive *drive;
-// PathLoader *pathLoader;
+PathLoader *pathLoader;
 PurePursuit *purep;
 // ServoControl *arm;
 
@@ -53,9 +58,18 @@ double getSysTime(){
     return double(time_us_64()) / 1E6;
 }
 
+// State Data
+node_state currentState = NODE_IDLE;
+bool goFlag = false;
+bool stopFlag = false;
+bool isFwdFinished = false;
+double setV = 0;
+double setHeading = 0;
+
+
 // MUTEXES
-auto_init_mutex(pwrMtx);
 auto_init_mutex(poseMtx);
+auto_init_mutex(pathMtx);
 
 void gpio_isr(uint gpio, uint32_t events)
 {
@@ -68,76 +82,131 @@ void gpio_isr(uint gpio, uint32_t events)
 
 
 // UART SUBSCRIBERS
-// void pathSubscriber(void *data, size_t length, packet_code code){
-//     packet_path_point *pathPoint = (packet_path_point*)data;
-//     pathLoader->load(*pathPoint);
+void pathSubscriber(void *data, size_t length, packet_code code){
+    std::cout << "Subscriber [Path] fired" << std::endl;
+    packet_path_point *pathPoint = (packet_path_point*)data;
+    pathLoader->load(*pathPoint);
 
-//     // for(int i = 0; i< PATH_MAX_POINTS; i++){
-//     //     packet_path_point tp = pathLoader->getActivePath()[i];
-//     //     std::cout << "code: " << (int)(tp.code) << std::endl;
-//     //     std::cout << "x: " << tp.x << std::endl;
-//     //     std::cout << "y: " << tp.y << std::endl;
-//     // }
-//     //     std::cout << "--------" << std::endl;
+    // for(int i = 0; i< PATH_MAX_POINTS; i++){
+    //     packet_path_point tp = pathLoader->getActivePath()[i];
+    //     std::cout << "code: " << (int)(tp.code) << std::endl;
+    //     std::cout << "x: " << tp.x << std::endl;
+    //     std::cout << "y: " << tp.y << std::endl;
+    // }
+    //     std::cout << "--------" << std::endl;
+}
+void goSubscriber(void *data, size_t length, packet_code code){
+    std::cout << "Subscriber [Go] fired" << std::endl;
 
-// }
+    goFlag = true;
+}   
+void stopSubscriber(void *data, size_t length, packet_code code){
+    std::cout << "Subscriber [Stop] fired" << std::endl;
+    stopFlag = true;
+}   
+void diagSubscriber(void *data, size_t length, packet_code code){
+    std::cout << "Subscriber [Diagnostic] fired" << std::endl;
+    // Access pose mtx
+    mutex_enter_blocking(&poseMtx);
+    // Get pose
+    GeometryUtils::Pose current = drive->getPose();
+    // Exit pose mtx
+    mutex_exit(&poseMtx);
+    current.theta = GeometryUtils::radToDeg(current.theta);
+    // Construct diag state packet with pose and other data
+    packet_diag_node_state packet = {
+        .v_right = drive->getVRight(),
+        .d_right = drive->getDistRight(),
+        .v_left = drive->getVLeft(),
+        .d_left = drive->getDistLeft(),
+    };
+    // Write diagnostic state down UART
+    uart_man->send(&packet,sizeof(packet_diag_node_state));
+}   
+void stateSubscriber(void *data, size_t length, packet_code code){
+    std::cout << "Subscriber [State] fired" << std::endl;
+    // Access pose mtx
+    mutex_enter_blocking(&poseMtx);
+    // Get pose
+    GeometryUtils::Pose current = drive->getPose();
+    // Exit pose mtx
+    mutex_exit(&poseMtx);
+    // Construct state packet
+    current.theta = GeometryUtils::radToDeg(current.theta);
+    GeometryUtils::Pose lookAhead =  purep->getLookAheadPose();
+    packet_node_state packet = {
+        .x = current.x,
+        .y = current.y,
+        .v = (drive->getVLeft() + drive->getVRight())/2.,
+        .theta = current.theta,
+        .state = currentState,
+        .x_exp = lookAhead.x,
+        .y_exp = lookAhead.y,
+        .velocity_exp = setV,
+        .heading_exp = setHeading
+    };
+    // Write pose down UART
+    uart_man->send(&packet,sizeof(packet_node_state));
+}   
+void rebaseSubscriber(void *data, size_t length, packet_code code){
+    std::cout << "Subscriber [Rebase] fired" << std::endl;
+    packet_rebase *rebasePoint = (packet_rebase*)data;
+    GeometryUtils::Pose newPose = {.x = rebasePoint->x, .y = rebasePoint->y, .theta = rebasePoint->heading}; 
+    mutex_enter_blocking(&poseMtx);
+    drive->setPose(newPose);
+    mutex_exit(&poseMtx);
+}   
+void setupUARTSubscribers()
+{
+    uart_man->subscribe(pathSubscriber,PACKET_PATH);
+    uart_man->subscribe(goSubscriber,PACKET_GO);
+    uart_man->subscribe(stopSubscriber,PACKET_STOP);
+    uart_man->subscribe(diagSubscriber,PACKET_DIAG_STATE);
+    uart_man->subscribe(stateSubscriber,PACKET_NODE_STATE);
+    uart_man->subscribe(rebaseSubscriber,PACKET_REBASE);
+}
 
-// void goSubscriber(void *data, size_t length, packet_code code){}   
-// void stopSubscriber(void *data, size_t length, packet_code code){}   
-// void diagSubscriber(void *data, size_t length, packet_code code){}   
-// void stateSubscriber(void *data, size_t length, packet_code code){}   
 
-// void rebaseSubscriber(void *data, size_t length, packet_code code){
-//     packet_rebase *rebasePoint = (packet_rebase*)data;
-//     Pose newPose = {.x = rebasePoint->x, .y = rebasePoint->y, .theta = rebasePoint->heading}; 
-//     mutex_enter_blocking(&poseMtx);
-//     // drive->setPose(newPose);
-//     mutex_exit(&poseMtx);
-// }   
+#ifdef PWR_TEST
+double driveSpeed = 0;
+auto_init_mutex(pwrMtx);
+#endif
 
-// void setupUARTSubscribers()
-// {
-//     uart_man->subscribe(pathSubscriber,PACKET_PATH);
-//     uart_man->subscribe(goSubscriber,PACKET_GO);
-//     uart_man->subscribe(stopSubscriber,PACKET_STOP);
-//     uart_man->subscribe(diagSubscriber,PACKET_DIAG_STATE);
-//     uart_man->subscribe(stateSubscriber,PACKET_NODE_STATE);
-//     uart_man->subscribe(rebaseSubscriber,PACKET_REBASE);
-// }
-
-
-
-double driveSpeed = 0.2;
 
 // Main function to execute on core 1 (Mainly used for telemetry)
 void core1_main()
 {
     std::cout << "Core 1 begin" << std::endl;
     
-    // pathLoader = new PathLoader([](){
-    //     std::cout << "Buffer Swapped" << std::endl;
-    //      load path into pure pursuit controller
-    //      use path mutex
-    //  });
-    // uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
-    // setupUARTSubscribers();
+    pathLoader = new PathLoader([](){
+        std::cout << "Buffer Swapped" << std::endl;
+        //  use path mutex
+        mutex_enter_blocking(&pathMtx);
+        //  load path into pure pursuit controller
+        purep->setPath(pathLoader->getActivePath(),pathLoader->size);
+        mutex_exit(&pathMtx);
+        
+     });
+    uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
+    setupUARTSubscribers();
 
     static uint64_t ledTs = time_us_64();
     static bool pinState = false;
     while (1)
     {
-        // double left, right, spd;
-        // std::cin >> right;
-        // std::cin >> left;
-        // std::cin >> spd;
-        // std::cout << " right: " << right << " left: " << left  << " speed: " << spd <<  std::endl;
-        // mutex_enter_blocking(&pwrMtx);
-        // drive->setLeftGains(left, 0, 0);
-        // drive->setRightGains(right, 0, 0);
-        // driveSpeed = spd;
-        // drive->resetControllers();
-        // mutex_exit(&pwrMtx);
-
+        #ifdef PWR_TEST
+        double left, right, spd;
+        std::cin >> right;
+        std::cin >> left;
+        std::cin >> spd;
+        std::cout << " right: " << right << " left: " << left  << " speed: " << spd <<  std::endl;
+        mutex_enter_blocking(&pwrMtx);
+        drive->setLeftGains(0, left, 0);
+        drive->setRightGains(0, right, 0);
+        driveSpeed = spd;
+        drive->resetControllers();
+        mutex_exit(&pwrMtx);
+        #endif
 
 
         // uart_man->loop();
@@ -150,6 +219,123 @@ void core1_main()
     }
 }
 
+
+
+
+void followPath(bool isReversed, GeometryUtils::Pose current){
+    // Check path mutex
+    mutex_enter_blocking(&pathMtx);
+    // Compute lookahead
+    GeometryUtils::Pose dest = purep->getLookAheadPose(current);
+
+    mutex_exit(&pathMtx);
+    // Release path mutex
+    // Check if heading is grossly different than target and set V to 0 if necessary first ?
+    // Compute heading and V
+    double gain;
+    double distToEnd = GeometryUtils::distToPoint(current,purep->getLastPose());
+    if( distToEnd < RAMP_DOWN_DIST){
+        gain = MAX_SPEED * (RAMP_DOWN_DIST - distToEnd);
+    }else {
+        gain = MAX_SPEED;
+    }
+
+    double v = gain * (isReversed? -1. : 1.);
+    double heading = purep->getLookAheadHeading(current);
+    if(isReversed){
+        heading = GeometryUtils::flipAngle(heading);
+    }
+    setV = v;
+    setHeading = heading;
+    #if defined PRNT_POSE_CSV
+    std::cout<< current.x << "," << current.y << "," << GeometryUtils::radToDeg(current.theta)
+    #endif 
+    #if defined PRNT_TARGET && defined PRNT_POSE_CSV
+    << "," << dest.x <<"," << dest.y << "," << heading << "," << v 
+    #endif
+
+    #if defined PRNT_POSE_CSV
+    << std::endl;
+    #endif
+
+    // Command drive
+    drive->setDriveState(heading,v);
+}
+
+
+
+void robotFSMLoop(){
+    mutex_enter_blocking(&poseMtx);
+    drive->update();
+    GeometryUtils::Pose current = drive->getPose();
+    mutex_exit(&poseMtx);
+
+    switch(currentState){
+        case NODE_IDLE:
+            // Set claw open
+            // arm->write(OPEN_POSITION);
+            // Stop Drive
+            drive->stop();
+
+            if(goFlag){
+                currentState = isFwdFinished? NODE_PATH_LEAVE : NODE_PATH_RETURN;
+                std::cout << "State: " << currentState <<std::endl;
+            }
+        break;
+
+        case NODE_STOPPED:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+            // Stop Drive
+            drive->stop();
+            if(goFlag){
+                currentState = isFwdFinished? NODE_PATH_LEAVE : NODE_PATH_RETURN;
+                std::cout << "State: " << currentState <<std::endl;
+            }
+        break;
+
+        case NODE_PATH_LEAVE:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+
+            if(stopFlag){
+                currentState = NODE_STOPPED;
+                std::cout << "State: " << currentState <<std::endl;
+            }
+            // Check if at last point
+            else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < 0.01){
+                std::cout << "LEAVE DONE" <<std::endl;
+                isFwdFinished = true;
+                currentState = NODE_IDLE;
+                std::cout << "State: " << currentState <<std::endl;
+            } else {
+                followPath(false,current);
+            }
+        break;
+
+        case NODE_PATH_RETURN:
+            // Set claw closed
+            // arm->write(CLOSED_POSITION);
+            if(stopFlag){
+                currentState = NODE_STOPPED;
+                std::cout << "State: " << currentState <<std::endl;
+            }
+            else if(GeometryUtils::distToPoint(current, purep->getLastPose()) < 0.01){
+                std::cout << "RETURN DONE" <<std::endl;
+                isFwdFinished = false;
+                currentState = NODE_IDLE;
+                std::cout << "State: " << currentState <<std::endl;
+            } else {
+               followPath(true,current);
+            }
+        break;
+    }
+    // Reset flags
+    goFlag = false;
+    stopFlag = false;
+}
+
+
 // Main function to execute on core 0 (primary core, interfaces with hardware)
 void core0_main()
 {
@@ -157,9 +343,9 @@ void core0_main()
     drive = new DifferentialDrive(getSysTime);
     gpio_set_irq_enabled_with_callback(PIN_ENC_LA, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, gpio_isr);
     std::cout << "Drive Setup" << std::endl;
-    // purep = new PurePursuit(0.1,drive->getPose(),false);
+    purep = new PurePursuit(0.01,drive->getPose(),false);
     bool reverse = false;
-    purep = new PurePursuit(0.01,{.x = 0.0, .y = 0.0, .theta = 0.0},reverse);
+    // purep = new PurePursuit(0.01,{.x = 0.0, .y = 0.0, .theta = 0.0},reverse);
     std::cout << "PurePursuit Setup" << std::endl;
     // arm = new ServoControl(PIN_SERVO);
 
@@ -168,50 +354,55 @@ void core0_main()
     sleep_ms(2000);
     std::cout << "Core 0 begin" << std::endl;
     uint64_t lastLoopTs = time_us_64();
-    uint64_t motorLoop = time_us_64();
-    uint64_t odomTs = time_us_64();
-
+    #ifdef EN_TIMEOUT
+    uint64_t timeoutTs = time_us_64();
+    #endif
     // static Pose testPose = {.x = 0, .y =0, .theta = 0};
     // static int index = 0;
     purep->setPath(testPath1, 5);
+    // purep->setPath(testPath2, 26);
+    currentState = NODE_PATH_LEAVE;
     while (1)
     {
         uint64_t currentTs = time_us_64();
         if (currentTs - lastLoopTs > LOOP_TIME_US)
         {
             // drive->setDriveState(10,driveSpeed);
-            drive->update();
-            // mutex_enter_timeout_ms(&pwrMtx,10);
-            // drive->setLeftV(driveSpeed);
-            // drive->setRightV(driveSpeed);
-            // std::cout << "right v: " << drive->getVRight() << " left v: " << drive->getVLeft() << " setpoint: "<< driveSpeed << std::endl;
-            // mutex_exit(&pwrMtx);
+            #ifdef PWR_TEST
+            mutex_enter_timeout_ms(&pwrMtx,10);
+            drive->setLeftV(driveSpeed);
+            drive->setRightV(driveSpeed);
+            // drive->setLeft(driveSpeed);
+            // drive->setRight(driveSpeed);
+            std::cout << drive->getVRight() << "," << drive->getVLeft() << ","<< driveSpeed << std::endl;
+            mutex_exit(&pwrMtx);
+            #endif
 
             // std::cout << "Theta: " << RAD_TO_DEG(drive->getPose().theta)
             // << " X:     " << drive->getPose().x 
             // << " Y:     " << drive->getPose().y
             // << std::endl;
-            GeometryUtils::Pose current = drive->getPose();
-
-            // std::cout << "PoseX:   " << current.x << " PoseY:   " << current.y << std::endl;
-            std::cout<< current.x << "," << current.y << "," << GeometryUtils::radToDeg(current.theta) <<std::endl;
-            GeometryUtils::Pose dest = purep->getLookAheadPose(current);
-            // Pose dest = purep->poseFromPacket(testPath1[index]);
-            double heading = purep->getLookAheadHeading(current);
-            // std::cout << "TargetX: " << dest.x <<     " TargetY: " << dest.y << " Heading: " << heading  << "\n" << std::endl; 
+            
             // index = (index+1) % 5;
             // Reset timer
             // testPose.x += 0.03*std::cos(DEG_TO_RAD(heading));
             // testPose.y += 0.03*std::sin(DEG_TO_RAD(heading));
-            // drive->setDriveState(heading,0.1);
-            if(GeometryUtils::distToPoint(current, purep->getLastPose()) < 0.01){
-                std::cout << "PATH DONE" <<std::endl;
                 // reverse = !reverse;
                 // purep->setReversed(reverse);
-                drive->stop();
-            }
+
+            robotFSMLoop();
+
             lastLoopTs = currentTs;
         }
+        #ifdef EN_TIMEOUT
+        if(currentTs - timeoutTs > 6*1E6){
+            currentState = NODE_IDLE;
+            std::cout << "State: " << currentState <<std::endl;
+            drive->stop();
+            while (1)
+                tight_loop_contents();
+        }
+        #endif
         tight_loop_contents();
     }
 }
@@ -240,59 +431,7 @@ int main()
 
 
 
-void robotFSMLoop(){
-    typedef enum {
-        IDLE, // Claw open, waiting to move
-        STOPPED, // Claw closed, waiting to move
-        LEAVING, // Claw closed, moving 
-        RETURNING // Claw closed, moving
-    } robState;
 
-    static robState currentState = IDLE;
 
-    switch(currentState){
-        case IDLE:
-            // Set claw open
-            // arm->write(OPEN_POSITION);
-            // Stop Drive
-            // drive->stop();
 
-        break;
 
-        case STOPPED:
-            // Set claw closed
-            // arm->write(CLOSED_POSITION);
-            // Stop Drive
-            // drive->stop();
-        break;
-
-        case LEAVING:
-            // Set claw closed
-            // arm->write(CLOSED_POSITION);
-            
-
-            // Check path mutex
-            // Check if heading to last point
-            // Compute lookahead
-            // Release path mutex
-            // Check if heading is grossly different than target and set V to 0 if necessary first
-            // Compute heading and V
-            // Command drive
-
-        break;
-
-        case RETURNING:
-            // Set claw closed
-            // arm->write(CLOSED_POSITION);
-            // Check path mutex
-            // Check if heading to last point
-            // Compute lookahead
-            // Release path mutex
-            // Check if heading is grossly different than target and set V to 0 if necessary first
-            // Compute heading and V
-            // Command drive
-
-        break;
-    }
-
-}
