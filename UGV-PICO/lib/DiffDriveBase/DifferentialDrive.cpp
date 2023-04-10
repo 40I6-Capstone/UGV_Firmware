@@ -53,6 +53,7 @@ void DifferentialDrive::setRight(double output){
 
 void DifferentialDrive::update()
 {
+    imu->update();
     odom->update(enc_right->getPosition(), enc_left->getPosition(), GeometryUtils::degToRad(imu->getAngle()));
     // std::cout << "Gyro: " << imu->getAngle() << std::endl;
     // std::cout << "EncR: " << enc_right->getPosition() << " EncL: " << enc_left->getPosition() << std::endl;
@@ -108,10 +109,10 @@ void DifferentialDrive::setRightGains(double kP, double kI, double kD){
 
 
 void DifferentialDrive::setDriveState(double heading, double v){
-    double bias = this->anglePID->calculate(heading,this->getAngle());
-
-    setRightV(v + bias);
-    setLeftV(v - bias);
+    double angleOffset = this->anglePID->calculate(heading,this->getAngle());
+    double bias = (abs(this->anglePID->getError())/180.)
+    setRightV(v + angleOffset);
+    setLeftV(v - angleOffset);
 }
 
 
