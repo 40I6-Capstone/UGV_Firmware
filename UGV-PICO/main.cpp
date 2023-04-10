@@ -377,6 +377,7 @@ void core0_main()
             std::cout << drive->getVRight() << "," << drive->getVLeft() << ","<< driveSpeed << "," << drive->getDistRight() << "," << drive->getDistLeft() << "," << drive->getAngle()<<std::endl;
             mutex_exit(&pwrMtx);
             #endif
+            drive->update();
 
             // std::cout << "Theta: " << RAD_TO_DEG(drive->getPose().theta)
             // std::cout << "Angle: " << (drive->getAngle())
