@@ -4,7 +4,7 @@
 #include "../MemoryFilter/FIRFilt/FIRFilt.hpp"
 #include "../../GeometryUtils/GeometryUtils.hpp"
 
-#define FILT_SIZE 5
+#define FILT_SIZE 3
 #define FILTB_SIZE 1
 
 class PICO_IMU
@@ -12,6 +12,7 @@ class PICO_IMU
 private:
     double staticDeadband;
     double driftOffset;
+    double driftReverseOffset;
     volatile double angle;
     DFRobot_BMX160 *imu;
     struct repeating_timer updateTimer;

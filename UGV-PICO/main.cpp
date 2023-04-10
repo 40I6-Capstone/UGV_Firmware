@@ -379,10 +379,10 @@ void core0_main()
             #endif
 
             // std::cout << "Theta: " << RAD_TO_DEG(drive->getPose().theta)
-            std::cout << "Angle: " << (drive->getAngle())
+            // std::cout << "Angle: " << (drive->getAngle())
             // << " X:     " << drive->getPose().x 
             // << " Y:     " << drive->getPose().y
-            << std::endl;
+            // << std::endl;
             
             // index = (index+1) % 5;
             // Reset timer

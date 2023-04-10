@@ -6,9 +6,12 @@ PICO_IMU::PICO_IMU(i2c_inst_t *i2c, uint sda, uint scl)
     #if defined UGV_ID_1
     this->driftOffset = 0.0609756;
     this->staticDeadband = 0.01;//0.0609756;
+    this->driftReverseOffset = 0.0;
     #elif defined UGV_ID_2
-    this->driftOffset = 0.0609756*9.5;
+    this->driftOffset = 0.0609756*11;
     this->staticDeadband = 0.0609756;
+    // this->driftReverseOffset = -0.0609756;
+    this->driftReverseOffset = 0;
     #endif
     this->imu = new DFRobot_BMX160(i2c, sda, scl);
     this->inverted = false;
@@ -28,7 +31,7 @@ bool PICO_IMU::begin()
     bool gyroStarted = this->imu->begin();
     this->imu->setGyroRange(eGyroRange_2000DPS);
     bool timerStarted = add_repeating_timer_ms(
-                                     -10,
+                                     -20,
                                      [](struct repeating_timer *t) -> bool
                                      {
                                          PICO_IMU *imu = (PICO_IMU *)(t->user_data);
@@ -61,7 +64,14 @@ void PICO_IMU::update()
     sBmx160SensorData_t gyroData;
     this->imu->getAllData(NULL, &gyroData, NULL);
     // std::cout << "Gyro:  " << gyroData.z << std::endl;
-    this->filt->update(gyroData.z - (gyroData.z > 0 ? this->driftOffset : 0));
+    #if defined UGV_ID_1
+    this->filt->update(gyroData.z - (gyroData.z > 0 ? this->driftOffset : this->driftReverseOffset));
+    #elif defined UGV_ID_2
+    double dbOut;
+    if((gyroData.z < this->driftOffset) && (gyroData.z > this->driftReverseOffset)){dbOut = 0.0;}
+    else {dbOut = gyroData.z - (gyroData.z > 0 ? this->driftOffset : 0.0609756*6) ;}
+    this->filt->update(dbOut);
+    #endif
     double filteredOmega = this->filt->getOutput();
     // std::cout << "Filt:  " << filteredOmega << std::endl;
     if (std::abs(filteredOmega) > this->staticDeadband)
@@ -73,6 +83,7 @@ void PICO_IMU::update()
         this->angle = (this->angle + dTheta);
     }
     this->lastTimeStamp = time_us_64();
+    std::cout << gyroData.z << "," << dbOut << "," <<filteredOmega << "," << this->angle << std::endl;
 }
 
 template <typename T> int sgn(T val) {
