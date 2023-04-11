@@ -385,8 +385,9 @@ void core0_main()
     // static Pose testPose = {.x = 0, .y =0, .theta = 0};
     // static int index = 0;
     // purep->setPath(testPath1, 5);
-    purep->setPath(testPath2, 56);
-    currentState = NODE_PATH_LEAVE;
+    // purep->setPath(testPath2, 56);
+    purep->setPath(testPath3, 56);
+    currentState = NODE_IDLE;
     while (1)
     {
         uint64_t currentTs = time_us_64();
