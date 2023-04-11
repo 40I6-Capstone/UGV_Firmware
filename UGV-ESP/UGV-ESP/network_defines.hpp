@@ -103,9 +103,12 @@ typedef struct
  * @param buff buffer to load bytes from
  * @param size size of packet structure, a sizeof() call is expected here
  */
-static inline void packet_from_buff(void *packet, char *buff, size_t size)
+static inline void packet_from_buff(void *packet, uint8_t *buff, size_t size)
 {
     memcpy(packet, buff, size);
+    // for (size_t i = 0; i < size; i++){
+    //     ((uint8_t*)packet)[i] = buff[i];
+    // }
 }
 
 /**
@@ -115,7 +118,10 @@ static inline void packet_from_buff(void *packet, char *buff, size_t size)
  * @param packet packet to get bytes from 
  * @param size size of packet structure, a sizeof() call is expected here
  */
-static inline void buff_from_packet(void *buff, void *packet, size_t size)
+static inline void buff_from_packet(uint8_t *buff, void *packet, size_t size)
 {
     memcpy(buff, packet, size);
+    // for (size_t i = 0; i < size; i++){
+    //     buff[i] = ((uint8_t*)packet)[i];
+    // }
 }

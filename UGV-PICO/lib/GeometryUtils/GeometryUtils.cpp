@@ -1,7 +1,8 @@
 #include "GeometryUtils.hpp"
 
 double GeometryUtils::distToPoint(Pose from, Pose to){
-    double deltaX = to.x - from.x;
+    // std::cout << "from: " << from.x << ", " << from.y << "to: " << to.x << "," << to.y <<std::endl;
+    double deltaX = to.x - from.x;  
     double deltaY = to.y - from.y;
 
     double xSqr, ySqr;
