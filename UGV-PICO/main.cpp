@@ -187,7 +187,7 @@ auto_init_mutex(pwrMtx);
 #endif
 
 #ifdef SERVO_TEST
-double servoSetpoint = 0;
+uint servoSetpoint = 0;
 #endif
 
 // Main function to execute on core 1 (Mainly used for telemetry)

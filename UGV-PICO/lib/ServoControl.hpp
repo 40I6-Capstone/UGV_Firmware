@@ -6,22 +6,24 @@
 
 // #define PIN_SERVO 22
 
-#define CLOSED_POSITION 124378
-#define OPEN_POSITION 248756
-#define TICKS_PER_DEG 690
+#define CLOSED_POSITION 
+#define OPEN_POSITION 
+#define TICKS_PER_DEG 5
+#define MIN_TICKS 1000
 
 class ServoControl
 {
 private:
     uint pin;
     // Wrap level, constant indicates with single pulse ends
-    uint16_t wrapLevel = 2487562u;
+    uint16_t wrapLevel = 20000u;
     // Compare level
     // uint16_t compareLevel = 100; // Should be minimum pulse high width
     // 1-2 ms = 124378 to 248756 ticks
     // each degree is 690 ticks for a range of 0 to 180
-    void convertDeg(uint deg);
+    uint16_t convertDeg(uint deg);
     void write(uint16_t level);
+    pwm_config cfg;
 
 public:
     void writeDeg(uint deg);
@@ -35,14 +37,20 @@ ServoControl::ServoControl(uint pin)
 
     // Config pins
     gpio_set_function(this->pin, GPIO_FUNC_PWM);
+    uint slice = pwm_gpio_to_slice_num(pin);
+    this->cfg = pwm_get_default_config();
+    pwm_config_set_clkdiv_int(&(this->cfg),125);
+    pwm_init(slice,&cfg,true);
+    
     writeDeg(0);
 }
 
 // take in degrees and map to ticks
-void ServoControl::convertDeg(uint deg)
+uint16_t ServoControl::convertDeg(uint deg)
 {
     // each degree is 690 ticks for a range of 0 to 180
-    uint16_t ticks = TICKS_PER_DEG * deg + CLOSED_POSITION;
+    uint16_t ticks = TICKS_PER_DEG * deg + MIN_TICKS;
+    return ticks;
 }
 
 void ServoControl::writeDeg(uint deg)
