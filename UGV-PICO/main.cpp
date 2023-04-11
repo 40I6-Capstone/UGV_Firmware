@@ -83,8 +83,6 @@ void gpio_isr(uint gpio, uint32_t events)
         drive->updateTicksLeft();
 }
 
-
-
 // UART SUBSCRIBERS
 void pathSubscriber(void *data, size_t length, packet_code code){
     std::cout << "Subscriber [Path] fired" << std::endl;
@@ -101,7 +99,6 @@ void pathSubscriber(void *data, size_t length, packet_code code){
 }
 void goSubscriber(void *data, size_t length, packet_code code){
     std::cout << "Subscriber [Go] fired" << std::endl;
-
     goFlag = true;
 }   
 void stopSubscriber(void *data, size_t length, packet_code code){
@@ -137,15 +134,15 @@ void stateSubscriber(void *data, size_t length, packet_code code){
     mutex_exit(&poseMtx);
     // Construct state packet
     current.theta = GeometryUtils::radToDeg(current.theta);
-    GeometryUtils::Pose lookAhead =  purep->getLookAheadPose();
+    // GeometryUtils::Pose lookAhead =  purep->getLookAheadPose();
     packet_node_state packet = {
         .x = current.x,
         .y = current.y,
         .v = (drive->getVLeft() + drive->getVRight())/2.,
         .theta = current.theta,
         .state = currentState,
-        .x_exp = lookAhead.x,
-        .y_exp = lookAhead.y,
+        .x_exp =  0.0,//lookAhead.x,
+        .y_exp = 0.0, //lookAhead.y,
         .velocity_exp = setV,
         .heading_exp = setHeading
     };
@@ -183,12 +180,19 @@ void core1_main()
     // std::cout << "Core 1 begin" << std::endl;
     
     pathLoader = new PathLoader([](){
-        // std::cout << "Buffer Swapped" << std::endl;
+        std::cout << "Buffer Swapped" << std::endl;
+
         //  use path mutex
         mutex_enter_blocking(&pathMtx);
         //  load path into pure pursuit controller
         purep->setPath(pathLoader->getActivePath(),pathLoader->size);
         mutex_exit(&pathMtx);
+
+        // for(int i = 0; i< PATH_MAX_POINTS; i++){
+        // packet_path_point tp = pathLoader->getActivePath()[i];
+        //     std::cout << "x: " << tp.x << " y: " << tp.y << std::endl;
+        // }
+        // std::cout << "--------" << std::endl;
         
      });
     uart_man = new UARTManager(PIN_UART0_TX, PIN_UART0_RX, 115200);
@@ -212,21 +216,21 @@ void core1_main()
         mutex_exit(&pwrMtx);
         #endif
 
-        double input;
-        std::cin >> input;
-        if(input > 0){
+        // double input;
+        // std::cin >> input;
+        // if(input > 0){
 
-            if((currentState == NODE_IDLE) || (currentState == NODE_STOPPED) ){
-                std::cout << "SENDING GO" << std::endl;
-                goFlag = true;
-            }
-            if((currentState == NODE_PATH_LEAVE) || (currentState == NODE_PATH_RETURN)){
-                std::cout << "SENDING STOP" << std::endl;
-                stopFlag = true;
-            }
-        }
+        //     if((currentState == NODE_IDLE) || (currentState == NODE_STOPPED) ){
+        //         std::cout << "SENDING GO" << std::endl;
+        //         goFlag = true;
+        //     }
+        //     if((currentState == NODE_PATH_LEAVE) || (currentState == NODE_PATH_RETURN)){
+        //         std::cout << "SENDING STOP" << std::endl;
+        //         stopFlag = true;
+        //     }
+        // }
 
-            // uart_man->loop();
+        uart_man->loop();
         if (time_us_64() - ledTs > 500 * 1E3)
         {
             gpio_put(PICO_DEFAULT_LED_PIN, pinState);
@@ -386,7 +390,7 @@ void core0_main()
     // static int index = 0;
     // purep->setPath(testPath1, 5);
     // purep->setPath(testPath2, 56);
-    purep->setPath(testPath3, 56);
+    // purep->setPath(testPath2, 56);
     currentState = NODE_IDLE;
     while (1)
     {
@@ -416,7 +420,12 @@ void core0_main()
                 // reverse = !reverse;
                 // purep->setReversed(reverse);
 
-            robotFSMLoop();
+            // robotFSMLoop();
+
+            mutex_enter_blocking(&poseMtx);
+            drive->update();
+            // GeometryUtils::Pose current = drive->getPose();
+            mutex_exit(&poseMtx);
 
             lastLoopTs = currentTs;
         }

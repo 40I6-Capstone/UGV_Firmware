@@ -46,7 +46,9 @@ private:
     std::vector<subscriber> subscribers[PACKET_TYPES_COUNT];
     void (*flushFunc)();
     bool checkCodeValid(packet_code code);
+    int getExpectedPacketSize(packet_code code);
 };
+
 
 /**
  * @brief Construct a new UARTManager::UARTManager object, will also configure UART hardware
@@ -96,6 +98,27 @@ bool UARTManager::checkCodeValid(packet_code code){
     }
 }
 
+int UARTManager::getExpectedPacketSize(packet_code code){
+    switch (code)
+    {
+        case PACKET_REBASE:
+            return sizeof(packet_rebase);
+        case PACKET_PATH:
+            return sizeof(packet_path_point);
+        case PACKET_GO:
+        case PACKET_STOP:
+        case PACKET_DIAG_STATE:
+        case PACKET_NODE_STATE:
+            return 1;
+            
+        default: // Flush
+            return -1;
+    }
+
+}
+
+
+
 void UARTManager::handleData()
 {
     typedef enum
@@ -119,9 +142,16 @@ void UARTManager::handleData()
         case IDLE:
             packet = (packet_code)uart_getc(UART); // First byte, set the code to determine how the rest are parsed
             if(checkCodeValid(packet)){
-                state = PARSING;                       // Set state to parsing
-                rx_count = 1;                          // Reset rx count
-                buff[0] = packet;
+                if(getExpectedPacketSize(packet) == 1){
+                    state = IDLE;
+                    this->parsed = true;
+                    this->parsed_packet_size = packet_size;
+                    this->parsed_packet_code = packet;
+                }else{
+                    state = PARSING;                       // Set state to parsing
+                    rx_count = 1;                          // Reset rx count
+                    buff[0] = packet;
+                }
             } else { // Flush
             std::cout << "flushing..." << int(packet) << std::endl;
             //     flushCount = 1;
@@ -134,32 +164,9 @@ void UARTManager::handleData()
         // Parsing bytes as they come in until the relevant struct is full
         case PARSING:
             // Get size of the packet to load
-            switch (packet)
-            {
-            case PACKET_NODE_STATE:
-                packet_size = sizeof(packet_node_state);
-                break;
+            packet_size = getExpectedPacketSize(packet);
 
-            case PACKET_PATH:
-                packet_size = sizeof(packet_path_point);
-                break;
-
-            case PACKET_GO:
-            case PACKET_STOP:
-                packet_size = 1;
-                break;
-
-            case PACKET_DIAG_STATE:
-                packet_size = sizeof(packet_diag_node_state);
-                break;
-
-            default: // Flush
-                packet_size = -1;
-                state = IDLE;
-                break;
-            }
             if(packet_size > 0){
-                // Update buffer
                 this->buff[rx_count++] = uart_getc(UART);
 
                 // If enough is read to save to a struct, reset state and raise flag
@@ -170,7 +177,10 @@ void UARTManager::handleData()
                     this->parsed_packet_size = packet_size;
                     this->parsed_packet_code = packet;
                 }
+            } else {
+                state = IDLE;
             }
+            
             break;
         }
     }
@@ -182,7 +192,7 @@ void UARTManager::handleData()
  */
 void UARTManager::loop()
 {
-    handleData();
+
     if (this->parsed)
     {
             for (size_t i = 0; i < subscribers[parsed_packet_code].size(); i++)
@@ -192,6 +202,8 @@ void UARTManager::loop()
                 subscribers[parsed_packet_code][i](data, this->parsed_packet_size,this->parsed_packet_code);
             }
         this->parsed = false;
+    }else {
+        handleData();
     }
 }
 
