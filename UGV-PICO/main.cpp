@@ -135,16 +135,28 @@ void stateSubscriber(void *data, size_t length, packet_code code){
     // Construct state packet
     current.theta = GeometryUtils::radToDeg(current.theta);
     // GeometryUtils::Pose lookAhead =  purep->getLookAheadPose();
+    // packet_node_state packet = {
+    //     .x = current.x,
+    //     .y = current.y,
+    //     .v = (drive->getVLeft() + drive->getVRight())/2.,
+    //     .theta = current.theta,
+    //     .state = currentState,
+    //     .x_exp =  0.0,//lookAhead.x,
+    //     .y_exp = 0.0, //lookAhead.y,
+    //     .velocity_exp = setV,
+    //     .heading_exp = setHeading
+    // };
     packet_node_state packet = {
-        .x = current.x,
-        .y = current.y,
-        .v = (drive->getVLeft() + drive->getVRight())/2.,
-        .theta = current.theta,
-        .state = currentState,
-        .x_exp =  0.0,//lookAhead.x,
-        .y_exp = 0.0, //lookAhead.y,
-        .velocity_exp = setV,
-        .heading_exp = setHeading
+        .code = (packet_code)0x11,
+        .x = (double)0x2222222222222222,
+        .y = (double)0x3333333333333333,
+        .v = (double)0x4444444444444444,
+        .theta = (double)0x5555555555555555,
+        .state = (node_state)0x66,
+        .x_exp =  (double)0x7777777777777777,//lookAhead.x,
+        .y_exp = (double)0x8888888888888888, //lookAhead.y,
+        .velocity_exp = (double)0x9999999999999999,
+        .heading_exp = (double)0xAAAAAAAAAAAAAAAA
     };
     // Write pose down UART
     uart_man->send(&packet,sizeof(packet_node_state));
