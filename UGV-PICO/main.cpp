@@ -178,7 +178,7 @@ auto_init_mutex(pwrMtx);
 #endif
 
 #ifdef SERVO_TEST
-double servoSetpoint = 0;
+uint servoSetpoint = 0;
 #endif
 
 // Main function to execute on core 1 (Mainly used for telemetry)
@@ -428,7 +428,7 @@ void core0_main()
 
             // robotFSMLoop();
 
-            arm->write((uint16_t)servoSetpoint);
+            arm->writeDeg(servoSetpoint);
 
             lastLoopTs = currentTs;
         }
