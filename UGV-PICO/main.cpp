@@ -234,6 +234,7 @@ void core1_main()
 
         #ifdef SERVO_TEST
         std::cin >> servoSetpoint;
+        std::cout <<"servo: " << servoSetpoint << std::endl;
         #endif
 
             // uart_man->loop();
